@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model announcements {
+  id              Int       @id @default(autoincrement())
+  title           String    @db.VarChar(255)
+  content         String
+  target_audience String    @default("All") @db.VarChar(20)
+  priority        String    @default("Normal") @db.VarChar(20)
+  created_by      Int
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  users           users     @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model attendance {
+  id         Int       @id @default(autoincrement())
+  student_id Int
+  date       DateTime  @db.Date
+  status     String    @default("Present") @db.VarChar(20)
+  notes      String?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users     @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([student_id, date])
+  @@index([date], map: "idx_attendance_date")
+  @@index([student_id], map: "idx_attendance_student_id")
+}
+
+model best_performers {
+  id          Int       @id @default(autoincrement())
+  student_id  Int?
+  category    String    @db.VarChar(100)
+  award_title String    @db.VarChar(200)
+  description String?
+  term        String?   @db.VarChar(50)
+  year        String?   @db.VarChar(10)
+  rank        Int?      @default(1)
+  is_active   Boolean?  @default(true)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  users       users?    @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model login_activity {
+  id           Int       @id @default(autoincrement())
+  user_id      Int?
+  role         String?   @db.VarChar(20)
+  username     String?   @db.VarChar(100)
+  full_name    String?   @db.VarChar(200)
+  ip_address   String?   @db.VarChar(50)
+  logged_in_at DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([role], map: "idx_login_role")
+  @@index([logged_in_at], map: "idx_login_time")
+}
+
+model marks {
+  id         Int       @id @default(autoincrement())
+  student_id Int
+  subject    String    @db.VarChar(100)
+  term       String    @db.VarChar(50)
+  year       String    @db.VarChar(10)
+  marks      Decimal   @db.Decimal(5, 2)
+  max_marks  Decimal   @default(100) @db.Decimal(5, 2)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users     @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([student_id, subject, term, year])
+  @@index([student_id], map: "idx_marks_student_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payments {
+  id             Int       @id @default(autoincrement())
+  student_id     Int
+  amount         Decimal   @db.Decimal(10, 2)
+  payment_type   String    @db.VarChar(20)
+  payment_method String    @db.VarChar(20)
+  term           String    @db.VarChar(50)
+  year           String    @db.VarChar(10)
+  receipt_number String?   @db.VarChar(50)
+  notes          String?
+  payment_date   DateTime  @db.Date
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  users          users     @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([student_id], map: "idx_payments_student_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model school_events {
+  id              Int       @id @default(autoincrement())
+  title           String    @db.VarChar(255)
+  description     String
+  event_date      DateTime  @db.Date
+  event_time      DateTime? @db.Time(6)
+  location        String?   @db.VarChar(255)
+  event_type      String    @default("Other") @db.VarChar(20)
+  target_audience String    @default("All") @db.VarChar(20)
+  is_active       Boolean?  @default(true)
+  created_by      Int
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  users           users     @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model school_rules {
+  id          Int       @id @default(autoincrement())
+  category    String    @default("General") @db.VarChar(20)
+  rule_number String?   @db.VarChar(20)
+  title       String    @db.VarChar(255)
+  description String
+  severity    String    @default("Info") @db.VarChar(20)
+  applies_to  String    @default("All") @db.VarChar(20)
+  is_active   Boolean?  @default(true)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model school_schedule {
+  id            Int       @id @default(autoincrement())
+  day_of_week   String    @db.VarChar(10)
+  start_time    DateTime  @db.Time(6)
+  end_time      DateTime  @db.Time(6)
+  subject       String    @db.VarChar(100)
+  teacher_id    Int?
+  class_trade   String?   @db.VarChar(100)
+  class_level   String?   @db.VarChar(10)
+  class_section String?   @db.VarChar(10)
+  room_number   String?   @db.VarChar(50)
+  is_active     Boolean?  @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  trade         String?   @db.VarChar(100)
+  level         String?   @db.VarChar(20)
+  section       String?   @db.VarChar(10)
+  notes         String?
+  users         users?    @relation(fields: [teacher_id], references: [id], onUpdate: NoAction)
+
+  @@index([day_of_week], map: "idx_schedule_day")
+}
+
+model students {
+  id              Int       @id @default(autoincrement())
+  user_id         Int       @unique
+  trade           String?   @db.VarChar(100)
+  level           String?   @db.VarChar(10)
+  section         String?   @db.VarChar(10)
+  dob             DateTime? @db.Date
+  gender          String?   @db.VarChar(10)
+  address         String?
+  guardian_name   String?   @db.VarChar(255)
+  guardian_phone  String?   @db.VarChar(20)
+  enrollment_date DateTime? @default(now()) @db.Timestamp(6)
+  profile_photo   String?
+  parent_name     String?   @db.VarChar(200)
+  parent_phone    String?   @db.VarChar(50)
+  users           users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_students_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model teacher_salaries {
+  id             Int       @id @default(autoincrement())
+  teacher_id     Int
+  month          String    @db.VarChar(20)
+  year           String    @db.VarChar(10)
+  base_salary    Decimal   @db.Decimal(10, 2)
+  bonuses        Decimal?  @default(0) @db.Decimal(10, 2)
+  deductions     Decimal?  @default(0) @db.Decimal(10, 2)
+  net_salary     Decimal   @db.Decimal(10, 2)
+  payment_status String    @default("Pending") @db.VarChar(20)
+  payment_date   DateTime? @db.Date
+  notes          String?
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  users          users     @relation(fields: [teacher_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([teacher_id, month, year])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id               Int                @id @default(autoincrement())
+  username         String             @unique @db.VarChar(50)
+  full_name        String             @db.VarChar(255)
+  email            String             @unique @db.VarChar(255)
+  phone            String?            @db.VarChar(20)
+  password         String             @db.VarChar(255)
+  role             String             @db.VarChar(20)
+  status           String?            @default("Pending") @db.VarChar(20)
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
+  announcements    announcements[]
+  attendance       attendance[]
+  best_performers  best_performers[]
+  marks            marks[]
+  payments         payments[]
+  school_events    school_events[]
+  school_schedule  school_schedule[]
+  students         students?
+  teacher_salaries teacher_salaries[]
+
+  @@index([role], map: "idx_users_role")
+  @@index([status], map: "idx_users_status")
+}
