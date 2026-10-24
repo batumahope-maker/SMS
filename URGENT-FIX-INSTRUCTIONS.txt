@@ -1,0 +1,42 @@
+================================
+🚨 URGENT FIX - DO THIS NOW! 🚨
+================================
+
+YOUR PROF IS WAITING - 2 MINUTE FIX!
+
+STEP 1: Download config-FINAL-FIX.php
+--------------------------------------
+
+STEP 2: Replace config.php
+---------------------------
+1. Open folder: C:\xampp\htdocs\essjt\
+2. DELETE the file: config.php
+3. COPY downloaded file: config-FINAL-FIX.php
+4. RENAME it to: config.php
+
+STEP 3: Refresh Browser
+------------------------
+Press F5 - DONE! ✅
+
+
+IF DATABASE DOESN'T EXIST:
+===========================
+1. Open: http://localhost/phpmyadmin
+2. Click "SQL" tab
+3. Copy ALL from: CREATE-MYSQL-DATABASE.sql
+4. Paste and click "Go"
+
+
+YOUR 3 PORTALS:
+===============
+Student: http://localhost/essjt/student
+Login: student1 / password
+
+Teacher: http://localhost/essjt/teacher
+Login: teacher1 / password
+
+Admin: http://localhost/essjt/admin
+Login: admin / password
+
+
+THAT'S IT! READY TO PRESENT! 🎓

@@ -1,0 +1,26 @@
+config.php
+SUPABASE-COMPLETE-GUIDE.md
+*.sql
+.env
+.env.*
+!.env.example
+SUPABASE-CREDENTIALS.txt
+node_modules/
+.next/
+# Private credentials
+.env
+.env.*
+!.env.example
+SUPABASE-CREDENTIALS.txt
+config-supabase.php
+config-localphp
+
+# Local databases
+db/*.db
+prisma/*.db
+
+# Dependencies and generated files
+node_modules/
+.next/
+.zscripts/*.log
+.zscripts/*.pid

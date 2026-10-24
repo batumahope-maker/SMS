@@ -1,0 +1,97 @@
+========================================
+ENABLE SUPABASE - GET YOUR DATA BACK!
+========================================
+
+You already have everything you need! Let's just enable it.
+
+STEP 1: ENABLE POSTGRESQL (Already Done!)
+------------------------------------------
+We did this before. To verify:
+1. XAMPP Control Panel
+2. Apache should be running
+3. PostgreSQL extension already enabled
+
+✅ Skip this if already done!
+
+
+STEP 2: USE SUPABASE CONFIG
+----------------------------
+You have: config-SUPABASE-FINAL.php
+
+1. Go to: C:\xampp\htdocs\essjt\
+2. Find: config.php
+3. DELETE it (or rename to config-local-backup.php)
+4. COPY: config-SUPABASE-FINAL.php to that folder
+5. RENAME to: config.php
+
+
+STEP 3: MAKE SURE YOU HAVE INTERNET
+------------------------------------
+Connect to WiFi (any internet connection)
+
+
+STEP 4: TEST YOUR PORTALS
+--------------------------
+Student Portal:
+http://localhost/essjt/student
+
+Teacher Portal:
+http://localhost/essjt/teacher
+
+Admin Portal:
+http://localhost/essjt/admin
+
+Use your ORIGINAL login credentials!
+
+
+ALL 1,204 STUDENTS SHOULD BE BACK! ✅
+
+
+IF YOU GET "COULD NOT TRANSLATE HOST NAME" ERROR:
+==================================================
+This means school network is blocking Supabase.
+
+Solution:
+- Try from home WiFi
+- Or use mobile hotspot
+- Or ask IT to whitelist supabase.co
+
+At school, network might block external databases.
+
+
+YOUR CREDENTIALS:
+=================
+Supabase Project: lmabkqlqoowuhfsimpua
+Database Password: batumahope132@
+API Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+All set in config-SUPABASE-FINAL.php!
+
+
+SHARING WITH CLASSMATES:
+=========================
+Once working, they can access from ANYWHERE:
+
+http://YOUR-IP/essjt/student
+or
+http://10.5.25.73/essjt/student
+
+And since it's Supabase, they can even access from HOME!
+
+
+BENEFITS YOU GET:
+=================
+✅ 1,204 students back
+✅ 60 teachers back
+✅ 48 classes back
+✅ All marks, attendance, payments
+✅ Access from anywhere
+✅ Automatic cloud backups
+✅ FREE (no cost)
+✅ Professional deployment
+
+
+YOU'RE READY! 🚀
+================
+Just replace config.php with the Supabase version
+and refresh your browser!

@@ -1,0 +1,57 @@
+================================
+🚨 FIX DATABASE ERROR - DO THIS!
+================================
+
+STEP 1: Clear Everything
+-------------------------
+1. In phpMyAdmin (where you are now)
+2. Click "SQL" tab at the top
+3. Copy this EXACT code:
+
+DROP DATABASE IF EXISTS essjt_school_system;
+CREATE DATABASE essjt_school_system;
+USE essjt_school_system;
+
+4. Paste in the SQL box
+5. Click "Go"
+6. Database created! ✅
+
+
+STEP 2: Create Tables & Users
+------------------------------
+1. Still in SQL tab
+2. Copy ALL from: CREATE-DATABASE-SIMPLE.sql
+3. Paste in SQL box
+4. Click "Go"
+5. Tables created! ✅
+
+
+STEP 3: Verify It Worked
+-------------------------
+1. Look at left sidebar
+2. You should see: essjt_school_system
+3. Click on it
+4. You should see tables: admins, students, teachers
+5. Click "students" table
+6. You should see 2 students (Alice, Bob)
+
+
+STEP 4: Replace config.php
+---------------------------
+1. Go to: C:\xampp\htdocs\essjt\
+2. Delete: config.php
+3. Copy: config-FINAL-FIX.php
+4. Rename to: config.php
+
+
+STEP 5: TEST!
+-------------
+http://localhost/essjt/student
+Login: student1 / password
+
+SHOULD WORK! ✅
+
+
+IF STILL ERROR:
+===============
+Show me a screenshot and I'll help immediately!

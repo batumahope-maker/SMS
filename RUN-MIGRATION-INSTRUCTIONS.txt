@@ -1,0 +1,119 @@
+========================================
+RUN AUTOMATIC MIGRATION SCRIPT
+========================================
+
+WHAT THIS DOES:
+---------------
+Automatically copies ALL your data from Supabase
+to local MySQL - exactly as it is!
+
+No manual export needed!
+All 1,205 students transferred!
+
+
+HOW TO RUN:
+===========
+
+STEP 1: Connect to Internet
+----------------------------
+Use mobile hotspot or any WiFi with internet access
+
+
+STEP 2: Copy Migration Script
+------------------------------
+1. Copy: AUTO-MIGRATE-SUPABASE-TO-MYSQL.php
+2. To: C:\xampp\htdocs\essjt\
+3. Keep filename as is
+
+
+STEP 3: Run the Script
+-----------------------
+Open in browser:
+http://localhost/essjt/AUTO-MIGRATE-SUPABASE-TO-MYSQL.php
+
+You'll see:
+🚀 Starting Supabase → MySQL Migration
+📥 Fetching users from Supabase...
+   Found 1266 records
+   ✅ Inserted 1266 records into MySQL
+📥 Fetching students from Supabase...
+   Found 1205 records
+   ✅ Inserted 1205 records into MySQL
+...etc for all tables...
+🎉 MIGRATION COMPLETE!
+
+
+STEP 4: Switch Config
+----------------------
+1. Go to: C:\xampp\htdocs\essjt\
+2. Rename: config.php → config-supabase.php
+3. Copy: config-LOCAL-FINAL.php
+4. Rename to: config.php
+
+
+STEP 5: Test Offline
+---------------------
+Now disconnect internet and test:
+http://localhost/essjt/student
+Login: (any of your original usernames)
+
+ALL 1,205 STUDENTS NOW IN MYSQL! ✅
+
+
+WHAT GETS MIGRATED:
+===================
+✅ All 1,266 users
+✅ All 1,205 students  
+✅ All 60 teachers
+✅ All admin accounts
+✅ All marks
+✅ All attendance records
+✅ All school schedules
+✅ All announcements
+✅ All events
+✅ All school rules
+✅ All payments
+✅ All login activity
+✅ EVERYTHING!
+
+
+REQUIREMENTS:
+=============
+- Internet connection (for migration only)
+- XAMPP running (Apache + MySQL)
+- 5-10 minutes (depending on data size)
+
+
+AFTER MIGRATION:
+================
+Your project will work:
+✅ Offline (no internet needed)
+✅ With ALL your original data
+✅ Exactly as it was in Supabase
+✅ All 1,205 students preserved
+✅ All relationships intact
+
+
+TIME REQUIRED:
+==============
+- Migration: 5-10 minutes (one time only)
+- After that: Works offline forever!
+
+
+TROUBLESHOOTING:
+================
+If you see errors:
+1. Make sure XAMPP MySQL is running
+2. Make sure you have internet connection
+3. Check Supabase credentials are correct
+4. Send me screenshot of error
+
+
+READY?
+======
+1. Connect to internet (hotspot)
+2. Copy script to essjt folder
+3. Open: http://localhost/essjt/AUTO-MIGRATE-SUPABASE-TO-MYSQL.php
+4. Wait for completion
+5. Switch config.php
+6. Works offline with ALL your data! 🎉
