@@ -1,1 +1,2 @@
-# projectMS
+# SMS
+Student Management System
