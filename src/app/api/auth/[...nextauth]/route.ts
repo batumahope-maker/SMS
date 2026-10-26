@@ -48,11 +48,6 @@ export const authOptions: NextAuthOptions = {
 
         const user = await db.user.findUnique({
           where: { username: credentials.username },
-          include: {
-            student: { select: { fullName: true } },
-            teacher: { select: { fullName: true } },
-            parent: { select: { fullName: true } },
-          },
         });
 
         if (!user) {
@@ -73,7 +68,7 @@ export const authOptions: NextAuthOptions = {
 
         return {
           id: user.id,
-          name: user.student?.fullName || user.teacher?.fullName || user.parent?.fullName || user.username,
+          name: user.username,
           email: user.email,
           role: user.role,
           schoolId: user.schoolId,
