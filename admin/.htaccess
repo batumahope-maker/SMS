@@ -1,0 +1,24 @@
+# ESSJT Clean URLs
+# This file creates clean, professional URLs
+
+RewriteEngine On
+
+# Redirect www to non-www (optional)
+RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+RewriteRule ^(.*)$ http://%1/$1 [R=301,L]
+
+# Clean URLs for login pages
+RewriteRule ^student$ student-login.php [L]
+RewriteRule ^teacher$ teacher-login.php [L]
+RewriteRule ^admin$ admin-login.php [L]
+RewriteRule ^register$ register.php [L]
+
+# Redirect old URLs to new clean URLs
+RewriteRule ^student-login\.php$ /essjt/student [R=301,L]
+RewriteRule ^teacher-login\.php$ /essjt/teacher [R=301,L]
+RewriteRule ^admin-login\.php$ /essjt/admin [R=301,L]
+
+# Remove .php extension from all pages
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [L]

@@ -1,0 +1,33 @@
+{
+  "name": "School Management System",
+  "short_name": "SchoolMS",
+  "description": "Comprehensive school management platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Admin Portal",   "url": "/admin/dashboard",   "description": "Admin dashboard" },
+    { "name": "Teacher Portal", "url": "/teacher/dashboard", "description": "Teacher dashboard" },
+    { "name": "Student Portal", "url": "/student/dashboard", "description": "Student dashboard" },
+    { "name": "Parent Portal",  "url": "/parent/dashboard",  "description": "Parent dashboard" }
+  ]
+}

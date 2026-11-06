@@ -1,0 +1,127 @@
+# ============================================================
+# ESSJT School Management System
+# Commit source only. Never secrets, databases, dumps, private
+# uploads, exports, logs or build output.
+# Rules are anchored with a leading "/" unless they must apply
+# at every depth.
+# ============================================================
+
+# ---------- 1. Credential-bearing PHP ----------
+# Root-relative: does NOT match admin/config.php and does NOT
+# match src/lib/db.ts.
+/config.php
+
+# TEMPORARY: admin/config.php still holds the DB credentials.
+# Delete this line in commit 2, after the split to the ignored
+# admin/config.local.php lands.
+/admin/config.php
+
+# Orphaned connection files. Each contains a credential
+# assignment and no PHP file in the tree requires or includes
+# them (verified). Kept on disk; excluded from Git.
+/db.php
+/admin/db.php
+
+# One-off migration script with a live external credential.
+/MIGRATE-DATA.php
+/config-supabase.php
+/config-localphp
+/SUPABASE-CREDENTIALS.txt
+
+# ---------- 2. Local overrides created by the config split ----------
+/config.local.php
+/admin/config.local.php
+*.local.php
+
+# ---------- 3. Environment files ----------
+# Negations MUST stay after ".env.*".
+.env
+.env.*
+!.env.example
+!.env.mysql.example
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa*
+
+# ---------- 4. Credential-shaped documents under review ----------
+# TEMPORARY. Delete a line once that file is scrubbed and
+# confirmed safe to publish.
+/setup-windows.bat
+/ENABLE-SUPABASE-NOW.txt
+/SUPABASE-SETUP-COMPLETE.txt
+/SUPABASE-COMPLETE-GUIDE.md
+
+# ---------- 5. Awaiting dependency review ----------
+/INSTALL-ROUTING.php
+
+# ---------- 6. Machine-specific server config ----------
+/httpd.conf
+/admin/httpd.conf
+/Caddyfile
+
+# ---------- 7. Databases, dumps, backups ----------
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+/db/
+prisma/*.db
+_preserved_database_backups/
+
+# ---------- 8. Private uploads and third-party exports ----------
+/uploads/
+/download/
+/mnt/
+
+# ---------- 9. Logs and runtime artefacts ----------
+*.log
+*.pid
+/errors.txt
+*.bak
+*.tmp
+*.swp
+*~
+
+# ---------- 10. Dependencies and build output ----------
+node_modules/
+.next/
+/out/
+/dist/
+/build/
+.turbo/
+coverage/
+.vercel/
+*.tsbuildinfo
+
+# ---------- 11. Lockfiles: Bun is authoritative ----------
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ---------- 12. OS and editor noise ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# --- pre-commit safety exclusions (2026-11-06) ---
+/INSTALL-PORTALS.php
+/INSTALL-UPDATES.php
+/student/debug-student-login.php
+/diagnostic.php
+/generate_students.php
+/admin/generate_students.php
+/index-old.php
+/prisma/schema-current-backup.prisma.prisma
+/prisma/schema-pulled-backup.prisma
+/FIX-DATABASE-NOW.txt
+/URGENT-FIX-INSTRUCTIONS.txt
+/RUN-MIGRATION-INSTRUCTIONS.txt
+/src/app/api/auth/\[...nextauth\]/route-backup.ts.txt.ts
+/prisma/seed.js
+/schema-original-from-git.prisma
+/includes/START-HERE.md
+/student/index (2).php

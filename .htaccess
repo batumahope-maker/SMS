@@ -1,0 +1,11 @@
+Options -Indexes
+RewriteEngine On
+RewriteBase /essjt/
+
+# Clean portal URLs
+RewriteRule ^student/?$  student/index.php  [L,NC]
+RewriteRule ^teacher/?$  teacher/index.php  [L,NC]
+RewriteRule ^admin/?$    admin/index.php    [L,NC]
+
+# Block direct access to PHP includes
+RewriteRule ^includes/   - [F,L]

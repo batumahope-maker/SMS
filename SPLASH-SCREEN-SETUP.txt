@@ -1,0 +1,106 @@
+========================================
+SETUP SPLASH SCREEN WITH LOGO
+========================================
+
+WHAT THIS DOES:
+---------------
+Creates a beautiful animated splash screen that shows:
+✨ ESSJT logo (animated bounce)
+✨ School name
+✨ 3 portal buttons (Student, Teacher, Admin)
+✨ Smooth animations
+✨ Professional gradient background
+
+
+HOW TO SET IT UP:
+=================
+
+STEP 1: Copy Splash Screen
+---------------------------
+1. Download: splash.php
+2. Copy to: C:\xampp\htdocs\essjt\
+3. Rename your current index.php to: index-old.php
+4. Rename splash.php to: index.php
+
+
+STEP 2: Make Sure Logo Exists
+------------------------------
+The splash screen needs the logo in:
+C:\xampp\htdocs\essjt\assets\essjt-logo.png
+
+If you don't have it:
+1. Download from: https://essjt.org.rw/wp-content/uploads/2023/08/cropped-LOGO-ESSJT-1.png
+2. Save as: essjt-logo.png
+3. Put in: C:\xampp\htdocs\essjt\assets\
+
+(Or it will use the online version automatically)
+
+
+STEP 3: Test It
+---------------
+1. Open: http://localhost/essjt/
+2. You should see the beautiful splash screen!
+3. Click any portal button to enter
+
+
+WHAT IT LOOKS LIKE:
+===================
+- Purple gradient background
+- Animated bouncing logo in center
+- "ESSJT Portal" title
+- "School Management System" subtitle
+- School name in French
+- 3 colorful portal buttons:
+  * Green - Student Portal
+  * Blue - Teacher Portal
+  * Purple - Admin Portal
+- Smooth fade/scale animations on click
+
+
+CUSTOMIZATION:
+==============
+You can edit colors in splash.php:
+
+Background gradient (line 15):
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+Student button color (line 107):
+background: linear-gradient(135deg, #11998e, #38ef7d);
+
+Teacher button color (line 112):
+background: linear-gradient(135deg, #1a73e8, #42a5f5);
+
+Admin button color (line 117):
+background: linear-gradient(135deg, #9c27b0, #e040fb);
+
+
+FEATURES:
+=========
+✅ Fully responsive (works on mobile)
+✅ Smooth animations
+✅ Logo fallback (online if local missing)
+✅ Modern design
+✅ Fast loading
+✅ Professional appearance
+
+
+ALTERNATIVE - ADD TO EXISTING INDEX:
+=====================================
+If you want to keep your current index.php:
+
+1. Rename current: index.php → portal-selector.php
+2. Use splash.php as new index.php
+3. Update button links in splash.php to point to portal-selector.php if needed
+
+
+TROUBLESHOOTING:
+================
+Logo doesn't show:
+→ Check C:\xampp\htdocs\essjt\assets\essjt-logo.png exists
+→ Or make sure you have internet (uses online fallback)
+
+Buttons don't work:
+→ Make sure student/, teacher/, admin/ folders exist
+
+Animations don't work:
+→ Use modern browser (Chrome, Firefox, Edge)

@@ -1,0 +1,25 @@
+ESSJT WORKING COPY - SOURCE PROVENANCE
+======================================
+
+Created      : 2026-11-06 20:32 (local)
+Source       : local Downloads\essjt_rebuild_workspace (absolute path redacted)
+Target       : C:\ESSJT_PROJECT\ESSJT_WORKING_COPY
+Method       : robocopy /E /COPY:DAT /DCOPY:DAT /R:1 /W:1 /XJ with exclusions (below)
+Result       : 355 files, 3.06 MB, 137 directories
+
+Integrity    : SHA-256 of all 355 copied files compared against the source.
+               355 compared, 0 mismatches, 0 files missing from source.
+Source state : unchanged - 390 files, last modified 2026-11-05 19:30.
+               The source remains the rollback reference. Do not delete or modify it.
+
+Excluded directories   : _preserved_database_backups, db, download, uploads,
+                         node_modules, .next, .git
+Excluded file patterns : *.db, *.sqlite, *.sqlite3, *.sql, *.log, *.pid
+Excluded named files   : errors.txt, MIGRATE-DATA.php, create-seed (1).ps1, .env
+Total excluded         : 35 files (20 by directory rule, 15 by file rule)
+
+Rationale: SQLite databases, SQL dumps, private uploads, third-party exports, logs
+and credential-bearing files remain in the source archive and must never enter Git.
+
+Git status : Repository initialized after working-copy creation; no commit existed at time of this record update.
+Reference  : WORKING_COPY_CREATION_PLAN.md and COPY_VERIFICATION_REPORT.md
