@@ -1,0 +1,713 @@
+{
+  "ranAt": "2026-11-17T20:45:38.941Z",
+  "database": "essjt_school_system_staging",
+  "passed": 141,
+  "failed": 0,
+  "results": [
+    {
+      "name": "staging environment guard passed (all URLs target the staging database)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "runtime database identity verified (read URL connects to staging; staging schema has all 15 TL procedures and 6 TL tables)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "pre-run safety gate: all six TL staging tables are empty",
+      "ok": true,
+      "evidence": "{\"vehicles\":0,\"transport_routes\":0,\"transport_assignments\":0,\"books\":0,\"book_issues\":0,\"payments\":0}"
+    },
+    {
+      "name": "pre-run cleanup of stg-e2e-% rows",
+      "ok": true,
+      "evidence": "rows=0"
+    },
+    {
+      "name": "staging server starts and serves requests",
+      "ok": true,
+      "evidence": "http://127.0.0.1:4334"
+    },
+    {
+      "name": "admin CSRF login works",
+      "ok": true,
+      "evidence": "status=302"
+    },
+    {
+      "name": "registration accepted as pending (stg-e2e-s1-mw…)",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "registration accepted as pending (stg-e2e-s2-mw…)",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "admin sees the pending registrations",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "admin approval of the first e2e student succeeds",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "first e2e student is Active, second stays Inactive",
+      "ok": true,
+      "evidence": "s1=Active, s2=Inactive"
+    },
+    {
+      "name": "approved e2e student can sign in",
+      "ok": true,
+      "evidence": "status=302"
+    },
+    {
+      "name": "fixed stg-student fixture is an Active student",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "no session → 401 on POST vehicles",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on PUT vehicles/1",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on DELETE vehicles/1",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on POST routes",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on PUT routes/1",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on DELETE routes/1",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on POST assignments",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on DELETE assignments/1",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on POST fees",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on POST books",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on PUT books/1",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on DELETE books/1",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on POST issues",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on POST issues/1/return",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "no session → 401 on POST fines",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "student session → 401 on POST vehicles",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "student session → 401 on DELETE routes/1",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "student session → 401 on POST assignments",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "student session → 401 on POST fees",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "student session → 401 on POST books",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "student session → 401 on POST issues",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "student session → 401 on POST issues/1/return",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "student session → 401 on POST fines",
+      "ok": true,
+      "evidence": "status=401"
+    },
+    {
+      "name": "400 on vehicles: missing vehicle number",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on vehicles: capacity 0",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on vehicles: capacity not a number",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on vehicles: missing driver name",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on vehicles PUT: invalid id in path",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on routes: missing name",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on routes: fare not a number",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on routes: negative fare",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on assignments: missing student",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on assignments: missing route",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on fees: bad month",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on fees: bad year format",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on fees: amount 0",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on fees: negative amount",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on books: missing title",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on books: negative quantity",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on books: invalid published year",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on issues: bad due date format",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on issues: missing book",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on return: negative fine",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on fines: missing issue",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "400 on malformed JSON body",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "vehicle created",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "vehicle row in DB matches the create payload",
+      "ok": true,
+      "evidence": "number=stg-e2e-v-mwl5w268, capacity=1"
+    },
+    {
+      "name": "duplicate vehicle number is 409",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "duplicate vehicle attempt wrote no row",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "PUT missing vehicle is 404",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "DELETE missing vehicle is 404",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "vehicle updated",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "vehicle row reflects the update",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "route created",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "route row in DB matches the create payload",
+      "ok": true,
+      "evidence": "vehicle_id=39, fare=1500.5"
+    },
+    {
+      "name": "route on missing vehicle is 404 VEHICLE_NOT_FOUND",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "PUT missing route is 404",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "route updated",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "route row reflects the update (name + fare)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "student assigned to route",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "assignment row in DB matches",
+      "ok": true,
+      "evidence": "route_id=44"
+    },
+    {
+      "name": "second assignment for the same student is 409 ALREADY_ASSIGNED",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "assigning an admin is 400 NOT_A_STUDENT",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "assigning a teacher is 400 NOT_A_STUDENT",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "assigning an Inactive student is 409 STUDENT_NOT_ACTIVE",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "assignment on a missing route is 404 ROUTE_NOT_FOUND",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "fixed staging student assigned (2 of 2 seats used)",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "two assignment rows exist",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "DELETE route with assigned students is 409 ROUTE_HAS_ASSIGNMENTS",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "DELETE vehicle with assigned students is 409 VEHICLE_HAS_ACTIVE_ASSIGNMENTS",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "capacity below assigned count is 409 CAPACITY_BELOW_ASSIGNMENTS",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "second vehicle created (capacity 1)",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "route on the second vehicle created",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "unassign succeeds",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "assignment row removed from DB",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "unassigning an unassigned student is 404 NOT_ASSIGNED",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "fixed student assigned to the capacity-1 vehicle",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "S1 unassigned to free a seat",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "assignment to a full capacity-1 vehicle is 409 VEHICLE_AT_CAPACITY",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "GET /admin/transport renders the management UI with live rows",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "student session is redirected away from /admin/transport",
+      "ok": true,
+      "evidence": "status=307"
+    },
+    {
+      "name": "DELETE unoccupied vehicle succeeds",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "vehicle row gone and its route cascade-deleted",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "transport fee posted",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "payment row in DB matches (purpose transport, reference transport:PERIOD)",
+      "ok": true,
+      "evidence": "purpose=transport, reference=transport:2026-11"
+    },
+    {
+      "name": "duplicate transport fee is 409 DUPLICATE_PAYMENT",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "fee for an Inactive student is 409 STUDENT_NOT_ACTIVE",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "fee for a teacher is 400 NOT_A_STUDENT",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "fee for a missing user is 400 NOT_A_STUDENT",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "book created",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "book row in DB matches (available initialised to quantity)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "duplicate ISBN is 409",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "duplicate book attempt wrote no row",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "PUT missing book is 404",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "DELETE missing book is 404",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "book updated",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "book quantity updated to 3 (available follows with no active issues)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "book issued",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "issue row in DB matches (open, not returned)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "available decremented to 2",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "second open issue for the same student/book is 409 ALREADY_ISSUED_TO_STUDENT",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "past due date is 400 INVALID_DUE_DATE",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "issue to an Inactive student is 409 STUDENT_NOT_ACTIVE",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "issue to a teacher is 400 NOT_A_STUDENT",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "issue of a missing book is 404 BOOK_NOT_FOUND",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "second copy issued to the approved e2e student",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "available decremented to 1",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "single-copy book created",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "single copy issued",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "issue when no copies are available is 409 NO_COPIES_AVAILABLE",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "quantity below active issues is 409 QUANTITY_BELOW_ACTIVE_ISSUES",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "DELETE book with issue history is 409 BOOK_HAS_ISSUE_HISTORY",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "negative fine on return is 400 (route-level)",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "return of a missing issue is 404 ISSUE_NOT_FOUND",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "return with a fine succeeds",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "issue row after return (returned, fine 12.50, not yet paid)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "available restored to 2",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "double return is 409 ALREADY_RETURNED",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "fine for a missing issue is 404 ISSUE_NOT_FOUND",
+      "ok": true,
+      "evidence": "status=404"
+    },
+    {
+      "name": "fine on an unreturned issue is 409 ISSUE_NOT_RETURNED",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "library fine posted",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "fine payment row matches (purpose library_fine, amount from the recorded fine, reference library-fine:<issue>)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "book_issues.fine_paid set to 1",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "second fine posting is 409 FINE_ALREADY_POSTED",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "return with fine 0 succeeds",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "fine on an issue with no fine due is 409 NO_FINE_DUE",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "GET /admin/library renders the management UI with live rows",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "post-run cleanup leaves no e2e users and no TL rows",
+      "ok": true,
+      "evidence": "users=0, tl={\"vehicles\":0,\"transport_routes\":0,\"transport_assignments\":0,\"books\":0,\"book_issues\":0,\"payments\":0}"
+    }
+  ]
+}

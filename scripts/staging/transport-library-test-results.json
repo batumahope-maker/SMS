@@ -1,0 +1,443 @@
+{
+  "generatedAt": "2026-11-17T10:33:57.203Z",
+  "results": [
+    {
+      "id": 1,
+      "name": "staging/live separation + 6 staging tables + 15 DEFINER routines under strict sql_mode",
+      "status": "PASS",
+      "evidence": "live new tables=0 (must be 0), live purpose col=0 (must be 0), live total tables=12, staging new tables=6, all 15 routines present=true, DEFINER+strict=true"
+    },
+    {
+      "id": 2,
+      "name": "writer EXECUTE-only principle: 9 direct-access probes all denied",
+      "status": "PASS",
+      "evidence": "vehicles:SELECT=DENIED, transport_routes:SELECT=DENIED, transport_assignments:SELECT=DENIED, books:SELECT=DENIED, book_issues:SELECT=DENIED, payments:SELECT=DENIED, vehicles:INSERT=DENIED, payments:DELETE=DENIED, book_issues:DELETE=DENIED"
+    },
+    {
+      "id": 3,
+      "name": "exact SHOW GRANTS equals the approved set (writer: USAGE+21 EXECUTE only; definer: 46 items incl. additive users.status read)",
+      "status": "PASS",
+      "evidence": "writer 22 grants / definer 46 grants — exact normalized-set match; no DELETE on book_issues or payments"
+    },
+    {
+      "id": 4,
+      "name": "4 test students created via registration procedures (tp1-tp3 approved Active, tp4 pending)",
+      "status": "PASS",
+      "evidence": "stg-student=3, tp1=46, tp2=47, tp3=48, tp4=49 (pending), teacher=2"
+    },
+    {
+      "id": 5,
+      "name": "sp_add_vehicle happy path",
+      "status": "PASS",
+      "evidence": "vehicle_id=22, capacity=2"
+    },
+    {
+      "id": 6,
+      "name": "sp_add_vehicle duplicate number rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `DUPLICATE_VEHICLE_NUMBER`"
+    },
+    {
+      "id": 7,
+      "name": "sp_add_vehicle capacity 0 rejected, nothing inserted",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `INVALID_CAPACITY`; rows_inserted=0"
+    },
+    {
+      "id": 8,
+      "name": "sp_add_vehicle second vehicle (STG-VAN-B, capacity 1)",
+      "status": "PASS",
+      "evidence": "vehicle_id=23"
+    },
+    {
+      "id": 9,
+      "name": "sp_add_route happy path",
+      "status": "PASS",
+      "evidence": "route_id=26, vehicle_id=22, fare=5000"
+    },
+    {
+      "id": 10,
+      "name": "sp_add_route unknown vehicle rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `VEHICLE_NOT_FOUND`"
+    },
+    {
+      "id": 11,
+      "name": "sp_update_vehicle unknown id rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `VEHICLE_NOT_FOUND`"
+    },
+    {
+      "id": 12,
+      "name": "sp_assign_student happy path",
+      "status": "PASS",
+      "evidence": "assignment rows=1"
+    },
+    {
+      "id": 13,
+      "name": "sp_assign_student teacher rejected (NOT_A_STUDENT)",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `NOT_A_STUDENT`"
+    },
+    {
+      "id": 14,
+      "name": "sp_assign_student pending student rejected (STUDENT_NOT_ACTIVE)",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `STUDENT_NOT_ACTIVE`"
+    },
+    {
+      "id": 15,
+      "name": "sp_assign_student unknown route rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ROUTE_NOT_FOUND`"
+    },
+    {
+      "id": 16,
+      "name": "sp_assign_student second seat fills capacity 2",
+      "status": "PASS",
+      "evidence": "assignments on Route A=2"
+    },
+    {
+      "id": 17,
+      "name": "sp_assign_student over capacity rejected (VEHICLE_AT_CAPACITY), count unchanged",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `VEHICLE_AT_CAPACITY`; assignments=2"
+    },
+    {
+      "id": 18,
+      "name": "CONCURRENT assignment race: exactly one of two parallel requests wins (VEHICLE_AT_CAPACITY for the loser)",
+      "status": "PASS",
+      "evidence": "tp2=OK | tp3= Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `VEHICLE_AT_CAPACITY` | rows=1 | winner unassigned for state reset"
+    },
+    {
+      "id": 19,
+      "name": "sp_assign_student already-assigned student rejected (ALREADY_ASSIGNED)",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ALREADY_ASSIGNED`"
+    },
+    {
+      "id": 20,
+      "name": "sp_unassign_student happy path",
+      "status": "PASS",
+      "evidence": "tp1 assignment rows after=0"
+    },
+    {
+      "id": 21,
+      "name": "re-assign after unassign works",
+      "status": "PASS",
+      "evidence": "tp1 reassigned=1"
+    },
+    {
+      "id": 22,
+      "name": "AMENDMENT 3 capacity floor: reducing below assignments rejected, capacity unchanged",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `CAPACITY_BELOW_ASSIGNMENTS`; capacity still=2"
+    },
+    {
+      "id": 23,
+      "name": "sp_update_vehicle happy path",
+      "status": "PASS",
+      "evidence": "type=Big Bus, capacity=3, driver=Driver A2"
+    },
+    {
+      "id": 24,
+      "name": "AMENDMENT 3 route move to smaller vehicle rejected, route unchanged",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `CAPACITY_BELOW_ASSIGNMENTS`; route still on vehicle_id=22"
+    },
+    {
+      "id": 25,
+      "name": "sp_update_route happy path",
+      "status": "PASS",
+      "evidence": "name=Route A Renamed, fare=5500"
+    },
+    {
+      "id": 26,
+      "name": "sp_update_route unknown id rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ROUTE_NOT_FOUND`"
+    },
+    {
+      "id": 27,
+      "name": "AMENDMENT 5: deleting vehicle with active assignments rejected, vehicle survives",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `VEHICLE_HAS_ACTIVE_ASSIGNMENTS`; vehicle rows=1"
+    },
+    {
+      "id": 28,
+      "name": "AMENDMENT 5: deleting route with assignments rejected, route survives",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ROUTE_HAS_ASSIGNMENTS`; route rows=1"
+    },
+    {
+      "id": 29,
+      "name": "sp_unassign_student not-assigned student rejected (NOT_ASSIGNED)",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `NOT_ASSIGNED`"
+    },
+    {
+      "id": 30,
+      "name": "assign tp2 to Route B (fills vehB capacity 1)",
+      "status": "PASS",
+      "evidence": "assignments=1"
+    },
+    {
+      "id": 31,
+      "name": "sp_delete_vehicle vehB rejected while assignment exists",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `VEHICLE_HAS_ACTIVE_ASSIGNMENTS`"
+    },
+    {
+      "id": 32,
+      "name": "CASCADE/RESTRICT interaction: direct vehicle delete blocked by RESTRICT (1451), nothing cascaded",
+      "status": "PASS",
+      "evidence": "fk_blocked=true, vehicle_rows=1, route_rows=1"
+    },
+    {
+      "id": 33,
+      "name": "AMENDMENT 5 CASCADE: deleting vehicle without assignments removes it AND cascades its route",
+      "status": "PASS",
+      "evidence": "vehicle rows=0, cascaded route rows=0"
+    },
+    {
+      "id": 34,
+      "name": "AMENDMENT 5 CASCADE: vehicle delete removes ALL its routes (2 routes gone)",
+      "status": "PASS",
+      "evidence": "created routes 28,29; after delete: vehicle=0, routes=0"
+    },
+    {
+      "id": 35,
+      "name": "AMENDMENT 5 RESTRICT: direct route delete blocked by FK (1451) while assignment exists",
+      "status": "PASS",
+      "evidence": "fk_blocked=true, route rows=1"
+    },
+    {
+      "id": 36,
+      "name": "sp_add_book happy path (available initialised = quantity)",
+      "status": "PASS",
+      "evidence": "book_id=13, quantity=2, available=2"
+    },
+    {
+      "id": 37,
+      "name": "sp_add_book duplicate isbn rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `DUPLICATE_ISBN`"
+    },
+    {
+      "id": 38,
+      "name": "sp_add_book negative quantity rejected, nothing inserted",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `INVALID_QUANTITY`; rows=0"
+    },
+    {
+      "id": 39,
+      "name": "sp_add_book bookB (qty 1, isbn) + bookC (qty 1, NULL isbn allowed)",
+      "status": "PASS",
+      "evidence": "bookB=14, bookC=15"
+    },
+    {
+      "id": 40,
+      "name": "sp_issue_book happy path (AMENDMENT 4: insert + inventory decrement atomic)",
+      "status": "PASS",
+      "evidence": "issue_id=21, available=1, returned_at=null"
+    },
+    {
+      "id": 41,
+      "name": "sp_issue_book unknown book rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `BOOK_NOT_FOUND`"
+    },
+    {
+      "id": 42,
+      "name": "sp_issue_book past due date rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `INVALID_DUE_DATE`"
+    },
+    {
+      "id": 43,
+      "name": "sp_issue_book same student holding book rejected (ALREADY_ISSUED_TO_STUDENT)",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ALREADY_ISSUED_TO_STUDENT`"
+    },
+    {
+      "id": 44,
+      "name": "sp_issue_book last copy then NO_COPIES_AVAILABLE (inventory never negative)",
+      "status": "PASS",
+      "evidence": "avail after first=0,  Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `NO_COPIES_AVAILABLE`, avail after rejected=0"
+    },
+    {
+      "id": 45,
+      "name": "AMENDMENT 4 quantity floor: qty below active issues rejected, quantity unchanged",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `QUANTITY_BELOW_ACTIVE_ISSUES`; quantity still=2"
+    },
+    {
+      "id": 46,
+      "name": "sp_update_book happy path (delta-adjusted available clamped)",
+      "status": "PASS",
+      "evidence": "quantity=3, available=2"
+    },
+    {
+      "id": 47,
+      "name": "sp_return_book happy path (AMENDMENT 4: return + inventory increment atomic)",
+      "status": "PASS",
+      "evidence": "returned_at=Tue Nov 17 2026 02:00:00 GMT+0200 (Central Africa Time), fine=500, available=3"
+    },
+    {
+      "id": 48,
+      "name": "AMENDMENT 4 duplicate return rejected (ALREADY_RETURNED), inventory unchanged",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ALREADY_RETURNED`; available=3"
+    },
+    {
+      "id": 49,
+      "name": "sp_return_book negative fine rejected, issue stays unreturned",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `INVALID_FINE`; unreturned=1"
+    },
+    {
+      "id": 50,
+      "name": "AMENDMENT 4 inventory guard: corrupted count detected (INVENTORY_CORRUPTION), return rolled back",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `INVENTORY_CORRUPTION`; unreturned=1, available during=1"
+    },
+    {
+      "id": 51,
+      "name": "sp_post_transport_fee happy path (purpose=transport, ref=transport:2026-12)",
+      "status": "PASS",
+      "evidence": "payment_id=36, purpose=transport, amount=5000, reference=transport:2026-12, date=Tue Nov 17 2026 02:00:00 GMT+0200 (Central Africa Time)"
+    },
+    {
+      "id": 52,
+      "name": "AMENDMENT 2 sequential duplicate transport fee rejected (DUPLICATE_PAYMENT), single row",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `DUPLICATE_PAYMENT`; rows=1"
+    },
+    {
+      "id": 53,
+      "name": "AMENDMENT 2 invalid periods rejected (month 13 and malformed), no rows inserted",
+      "status": "PASS",
+      "evidence": "month13= Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `INVALID_PERIOD`; malformed= Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `INVALID_PERIOD`; transport rows=1"
+    },
+    {
+      "id": 54,
+      "name": "sp_post_transport_fee zero amount rejected (INVALID_AMOUNT), no row",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `INVALID_AMOUNT`; rows=0"
+    },
+    {
+      "id": 55,
+      "name": "sp_post_transport_fee teacher rejected (NOT_A_STUDENT)",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `NOT_A_STUDENT`"
+    },
+    {
+      "id": 56,
+      "name": "CONCURRENT duplicate transport fee race: exactly one succeeds, loser gets DUPLICATE_PAYMENT",
+      "status": "PASS",
+      "evidence": "call1=OK | call2= Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `DUPLICATE_PAYMENT` | rows=1"
+    },
+    {
+      "id": 57,
+      "name": "AMENDMENT 1: legacy NULL-purpose rows accepted with identical (student, ref); coexist with purpose rows",
+      "status": "PASS",
+      "evidence": "legacy rows=2 (MariaDB treats NULL index entries as distinct), transport rows=2"
+    },
+    {
+      "id": 58,
+      "name": "sp_post_library_fine happy path (amount from book_issues.fine, ref=library-fine:<id>, fine_paid=1)",
+      "status": "PASS",
+      "evidence": "payment_id=42, purpose=library_fine, amount=1000, reference=library-fine:23, fine_paid=1"
+    },
+    {
+      "id": 59,
+      "name": "AMENDMENT 2 repeat fine posting rejected (FINE_ALREADY_POSTED), single payment row",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `FINE_ALREADY_POSTED`; rows=1"
+    },
+    {
+      "id": 60,
+      "name": "sp_post_library_fine unreturned issue rejected (ISSUE_NOT_RETURNED)",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ISSUE_NOT_RETURNED`"
+    },
+    {
+      "id": 61,
+      "name": "sp_post_library_fine zero-fine issue rejected (NO_FINE_DUE), no payment row",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `NO_FINE_DUE`; rows=0"
+    },
+    {
+      "id": 62,
+      "name": "CONCURRENT duplicate fine race: exactly one payment row; loser blocked (fine_paid guard or dedup key)",
+      "status": "PASS",
+      "evidence": "call1=OK | call2= Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `FINE_ALREADY_POSTED` | rows=1"
+    },
+    {
+      "id": 63,
+      "name": "AMENDMENT 5: deleting book with issue history rejected, book survives",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `BOOK_HAS_ISSUE_HISTORY`; book rows=1"
+    },
+    {
+      "id": 64,
+      "name": "AMENDMENT 5 RESTRICT: direct book delete blocked by FK (1451) — issue history never destroyed",
+      "status": "PASS",
+      "evidence": "fk_blocked=true, book rows=1"
+    },
+    {
+      "id": 65,
+      "name": "PAYMENT POLICY: one payment per student-month; DIFFERENT months both accepted (no cross-month dedup)",
+      "status": "PASS",
+      "evidence": "rows 2027-03+2027-04=2 (expect 2); repeat 2027-03 -> DUPLICATE_PAYMENT"
+    },
+    {
+      "id": 66,
+      "name": "C-suite setup: students tp5-tp8 registered + approved Active",
+      "status": "PASS",
+      "evidence": "tp5=50, tp6=51, tp7=52, tp8=53, active=4/4"
+    },
+    {
+      "id": 67,
+      "name": "C1: assignment vs vehicle deletion — vehicle-first locks, no deadlock, exactly one winner, state consistent",
+      "status": "PASS",
+      "evidence": "assign=OK | delete= Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `VEHICLE_HAS_ACTIVE_ASSIGNMENTS` | vehicle_rows=1, assignment_rows=1, deadlock=false | reset done"
+    },
+    {
+      "id": 68,
+      "name": "C2: concurrent route swaps S1:A->B and S2:B->A — ascending-id vehicle locks serialize the swap cycle, no deadlock",
+      "status": "PASS",
+      "evidence": "m1=OK | m2=OK | S1 on=27 (want 27), S2 on=26 (want 26), deadlock=false | vehicles deleted (reset)"
+    },
+    {
+      "id": 69,
+      "name": "C3: route movement (M1 A->B) vs assignment to that route — no deadlock, load<=capacity invariant holds",
+      "status": "PASS",
+      "evidence": "move=OK | assign= Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ROUTE_NOT_FOUND` | M1 on=29, load=0, capacity=1, deadlock=false | tp6 + vehicles reset"
+    },
+    {
+      "id": 70,
+      "name": "C4: assignment vs vehicle capacity update — no deadlock, capacity>=load invariant holds",
+      "status": "PASS",
+      "evidence": "assign=OK | update=OK | capacity=2, driver=Driver C4b, load=1, deadlock=false | tp7 + vehicle reset"
+    },
+    {
+      "id": 71,
+      "name": "C5: route deletion vs assignment to that route — no deadlock, exactly one winner, state consistent",
+      "status": "PASS",
+      "evidence": "assign=OK | delete= Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ROUTE_HAS_ASSIGNMENTS` | route_rows=1, assignment_rows=1, deadlock=false | tp8 + route + vehicle reset"
+    },
+    {
+      "id": 72,
+      "name": "C6: 4-client storm (2 vehicles / 3 routes) — exactly 3 wins, 1 VEHICLE_AT_CAPACITY, no deadlock, loads exact",
+      "status": "PASS",
+      "evidence": "wins=3 (students 50,51,52), losers=[ Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `VEHICLE_AT_CAPACITY`] | vehP1_load=2/2, vehP2_load=1/1, deadlock=false, leftover_assignments=0 | reset done"
+    },
+    {
+      "id": 73,
+      "name": "sp_post_library_fine nonexistent issue rejected (ISSUE_NOT_FOUND), no payment row",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ISSUE_NOT_FOUND`; rows=0"
+    }
+  ]
+}

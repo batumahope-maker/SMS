@@ -1,0 +1,140 @@
+ESSJT MariaDB system-table repair — preparation report (no credentials)
+Generated: 2026-11-14 (local evening)
+Scope: server metadata only. The live essjt_school_system database was NOT accessed,
+NOT read, and NOT modified. No REPAIR has been executed.
+
+1. SERVER FACTS
+   - MariaDB version: 10.4.32-MariaDB (XAMPP), datadir C:\xampp\mysql\data\
+   - System tables engine: Aria (user shows NULL engine — it is the Cluster/global_priv
+     backed table in 10.4; all other grant tables are Aria)
+   - Original start command (captured before shutdown):
+       "c:\xampp\mysql\bin\mysqld.exe" --defaults-file="c:\xampp\mysql\bin\my.ini" --standalone
+
+2. CORRUPTION TIMELINE (all evidence from CHECK TABLE runs, saved in
+   scripts/staging/server-diagnostics.txt)
+   - First failure: GRANT errored 1194 — mysql.tables_priv "marked as crashed".
+     CHECK then: tables_priv Corrupt ("Bitmap at page 0 has pages reserved outside
+     of data file length"); mysql.db only a size anomaly (datafile 2,162,688 bytes
+     for 4 rows; expected 16,384) but status OK; mysql.proc, columns_priv,
+     procs_priv, user all OK.
+   - Later CHECK (same day): tables_priv now OK; corruption MOVED to mysql.db —
+     "Page 57: Got error: 176 when reading datafile", status Corrupt.
+   - Latest startup attempt (after clean shutdown + verified backups): server
+     REFUSES TO START:
+       [ERROR] Table '.\mysql\db' is marked as crashed and last (automatic?)
+               repair failed
+       [ERROR] Fatal error: Can't open and lock privilege tables
+     Aria automatic recovery has already failed on this table; the server cannot
+     recover without a manual repair.
+
+3. BACKUPS (all created AFTER a clean mysqladmin shutdown, exit 0, verified)
+   Backup directory: C:\ESSJT_PROJECT\BACKUPS\mysql_system_20261114-204346
+     a) mysql_system_dump.sql — logical dump of the complete mysql system DB
+        (1,450,694 bytes; 32 CREATE TABLE statements; "Dump completed" marker
+        verified). Excludes the corrupt mysql.db (mysqldump errored 1034 on it;
+        a retry with --ignore-table=mysql.db succeeded).
+     b) mysql_data_dir\ — full physical copy of C:\xampp\mysql\data\mysql\
+        (90 files, includes tables_priv.MAD-...BAK auto-recovery artifact and
+        pre-existing stray students.frm/.ibd junk, documented).
+     c) tables_priv_files\ — separate copy of tables_priv.frm/.MAD/.MAI
+        (2,978 / 8,192 / 8,192 bytes).
+     d) db_files\ — separate copy of db.frm/.MAD/.MAI (2,713 / 2,162,688 / 24,576
+        bytes) — note: this is a copy of the CORRUPT file, kept for forensics,
+        not for restore.
+   Verification: every critical file byte-read successfully; dump marker + table
+   count checked. Backup dir recorded in scripts/staging/backup-dir.txt.
+
+4. WHAT IS AT STAKE IN mysql.db
+   mysql.db held 4 rows (DB-level privileges). These likely include the
+   application's SELECT-only grants for essjt_readonly on essjt_school_system
+   and possibly phpmyadmin/pma related rows. Global privileges (mysql.user) are
+   intact and check OK. Worst case after repair: some DB-level grant rows are
+   lost and must be re-created (re-granting essjt_readonly would be a LIVE-database
+   privilege write requiring separate explicit approval). No school data is at
+   risk from the repair itself.
+
+5. STAGING STATE (frozen mid-setup, untouched)
+   - essjt_school_system_staging exists: users/students/teachers tables with
+     synthetic records only.
+   - essjt_definer@localhost and essjt_writer@localhost exist; NO grants applied,
+     NO procedures created. Setup script has a planned --resume path.
+   - staging.env (untracked) holds generated staging passwords; never printed.
+
+6. PROPOSED REPAIR OPTIONS (require approval; NOTHING run yet)
+   Option A (offline, recommended): with the server stopped (it already is),
+     run aria_chk --recover on the mysql.db table files:
+       aria_chk -r "C:\xampp\mysql\data\mysql\db"
+     then start the server normally and CHECK TABLE mysql.db.
+     No insecure skip-grant window; repair happens on files while server is down.
+   Option B (server-based): start mysqld with --skip-grant-tables (brief local
+     insecure window), run REPAIR TABLE mysql.db; (+ REPAIR TABLE mysql.tables_priv
+     if desired), FLUSH PRIVILEGES, clean shutdown, restart normally.
+   In both cases: verify with CHECK TABLE, then verify essjt_readonly grants and
+     read-only access to the live ESSJT database (read-only checks only).
+   Any lost DB-level grant rows will be reported and re-created ONLY with
+     separate explicit approval.
+
+7. BACKUP RESTORE PATH (if repair fails)
+   The physical backups let us restore the pre-repair state of the mysql system
+   directory; school data (InnoDB, separate files) is unaffected either way.
+
+8. CONTROLLED OFFLINE RECOVERY OF mysql.db (executed under approval, working copy only)
+   Preconditions verified:
+   - mysqld NOT running, port 3306 closed.
+   - Live db.frm/.MAD/.MAI SHA256-identical to the verified backup copies
+     (originals preserved unchanged).
+   Working copy: C:\ESSJT_PROJECT\BACKUPS\mysql_system_20261114-204346\db_repair_work\
+     (copies of db.frm 2,713 / db.MAD 2,162,688 / db.MAI 24,576 bytes)
+   aria_chk --check (pre-repair): "Table is marked as crashed and last repair
+     failed", "Found 1 keys of 4", "Page 57: Got error: 176" — matches live state.
+   aria_chk --recover (exit 0): repaired by sorting; ~50 data pages reported
+     "Wrong CRC" (pages 57-260 region) — the previously observed error 176 pages.
+   aria_chk --check (post-repair): exit 0, table structurally clean.
+   RESULT: data file normalized to 16,384 bytes but only 1 of 4 rows survived:
+     localhost / essjt_school_system / essjt_readonly
+   The surviving row is the application's read-only grant on the live ESSJT
+   database (most important row). The 3 lost rows are content-unrecoverable
+   (CRC-damaged pages show no readable row text in the preserved original);
+   they are presumed to be XAMPP/phpMyAdmin system rows — to be confirmed by
+   SELECT * FROM mysql.db after restart. No grant will be recreated without
+   separate approval.
+   Note: aria_chk emitted its standard "Can't find aria_log_control" warning
+   because the Aria control file lives in the datadir and was not part of the
+   working copy; recovery completed and verifies clean regardless. The server
+   startup + CHECK TABLE remains the authoritative validation.
+
+9. REPLACEMENT + POST-REPAIR VERIFICATION (executed under separate approval)
+   Safety: damaged originals copied to db_files_damaged_pre_replacement\
+     BEFORE replacement; all three SHA-256 verified identical to live files.
+   Replacement: repaired db.frm/db.MAD/db.MAI copied into C:\xampp\mysql\data\mysql\
+     (mysqld confirmed not running at copy time); post-copy SHA-256 matched
+     the repaired working copy for all three files.
+   Startup: MariaDB started with its original command line
+     (mysqld --defaults-file=c:\xampp\mysql\bin\my.ini --standalone);
+     server answered within ~2 s, no errors in startup path.
+   CHECK TABLE mysql.db:          OK
+   CHECK TABLE mysql.tables_priv: OK
+   mysql.db contents (surviving rows): exactly 1 row —
+     Host=localhost, Db=essjt_school_system, User=essjt_readonly,
+     Select_priv=Y, Insert_priv=N, Update_priv=N, Delete_priv=N
+   Missing privilege rows: 3 of the original 4 rows were not recoverable
+     (CRC-damaged pages). Identities are unrecoverable; candidates are
+     phpMyAdmin control-user rows (a pma@localhost account still exists in
+     mysql.user) and possibly an XAMPP default row. NOT recreated — awaiting
+     separate approval if the user wants phpMyAdmin control-user grants back.
+   SHOW GRANTS FOR 'essjt_readonly'@'localhost':
+     GRANT USAGE ON *.* ... (global)
+     GRANT SELECT ON `essjt_school_system`.* ...
+   Application-account live test (as essjt_readonly via the app datasource,
+     loaded in memory only, never printed):
+     connected as essjt_readonly@localhost, database essjt_school_system
+     read-only SELECT users: OK (1,311 rows — live records intact)
+     INSERT: DENIED (error 1142)   UPDATE: DENIED (1142)   DELETE: DENIED (1142)
+   Staging state re-verified: DB + users/students/teachers tables exist with
+     0 rows (synthetic records were never inserted — the setup script inserts
+     data after grants, and it aborted at the first GRANT); accounts
+     essjt_definer/essjt_writer exist with no grants and no procedures.
+   mysql.user accounts intact: root(3 hosts), essjt_readonly, essjt_definer,
+     essjt_writer, pma.
+
+

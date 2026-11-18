@@ -1,0 +1,107 @@
+{
+  "generatedAt": "2026-11-14T20:18:05.786Z",
+  "results": [
+    {
+      "id": 0,
+      "name": "environment check",
+      "status": "PASS",
+      "evidence": "root connected; all SQL below references essjt_school_system_staging only"
+    },
+    {
+      "id": 1,
+      "name": "writer account sanity + direct table access denied",
+      "status": "PASS",
+      "evidence": "connected as essjt_writer@localhost, default db null; SELECT=DENIED INSERT=DENIED UPDATE=DENIED DELETE=DENIED"
+    },
+    {
+      "id": 2,
+      "name": "sp_register_student happy path",
+      "status": "PASS",
+      "evidence": "new_user_id=18, role=student, status=Inactive, must_change_password=0, registration_status=pending, students_profile_rows=1"
+    },
+    {
+      "id": 3,
+      "name": "sp_register_student duplicate username",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `DUPLICATE_USERNAME`; rows_with_dup_email=0"
+    },
+    {
+      "id": 4,
+      "name": "sp_register_student duplicate email",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `DUPLICATE_EMAIL`; rows_with_new_username=0"
+    },
+    {
+      "id": 5,
+      "name": "sp_register_student invalid hash rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `INVALID_HASH_FORMAT`; rows_inserted=0"
+    },
+    {
+      "id": 6,
+      "name": "mid-transaction failure rolls back completely (student + teacher registration)",
+      "status": "PASS",
+      "evidence": "student_error=true, teacher_error=true, orphan_user_rows=0, orphan_student_profiles=0, orphan_teacher_profiles=0, unrelated_synthetic_records_unchanged=true"
+    },
+    {
+      "id": 7,
+      "name": "sp_register_teacher happy path",
+      "status": "PASS",
+      "evidence": "new_user_id=21, role=teacher, status=Inactive, pending, teachers_profile_rows=1"
+    },
+    {
+      "id": 8,
+      "name": "sp_register_teacher duplicate username",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `DUPLICATE_USERNAME`"
+    },
+    {
+      "id": 9,
+      "name": "sp_approve_registration pending → Active + approved",
+      "status": "PASS",
+      "evidence": "result={\"f0\":18}, status=Active, registration_status=approved"
+    },
+    {
+      "id": 10,
+      "name": "sp_approve_registration non-pending rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `NO_PENDING_REGISTRATION`"
+    },
+    {
+      "id": 11,
+      "name": "sp_reject_registration pending → rejected, stays Inactive",
+      "status": "PASS",
+      "evidence": "status=Inactive, registration_status=rejected"
+    },
+    {
+      "id": 12,
+      "name": "sp_reject_registration non-pending rejected",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `NO_PENDING_REGISTRATION`"
+    },
+    {
+      "id": 13,
+      "name": "sp_set_account_password sets hash + must_change_password=1",
+      "status": "PASS",
+      "evidence": "result_user_id=18, must_change_password=1, stored_hash_equals_provided=true"
+    },
+    {
+      "id": 14,
+      "name": "sp_set_account_password refuses admin accounts",
+      "status": "PASS",
+      "evidence": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `ACCOUNT_NOT_PERMITTED`; admin_row_unchanged=true"
+    },
+    {
+      "id": 15,
+      "name": "sp_change_own_password wrong-old rejected; correct-old succeeds and clears flag",
+      "status": "PASS",
+      "evidence": "wrong_old= Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `1644`. Message: `VERIFY_FAILED_OR_NOT_PERMITTED`, unchanged_after_wrong=true, change_result=18, flag_after=0, hash_swapped=true"
+    },
+    {
+      "id": 16,
+      "name": "exact SHOW GRANTS equals the approved privilege set (both accounts, incl. approved definer EXECUTE amendment)",
+      "status": "PASS",
+      "evidence": "writer: 7 grants (USAGE + 6 EXECUTE); definer: 12 grants (USAGE + 6 EXECUTE + 5 column-scoped); exact normalized-set match"
+    }
+  ]
+}

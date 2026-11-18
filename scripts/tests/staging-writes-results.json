@@ -1,0 +1,218 @@
+{
+  "ranAt": "2026-11-16T08:12:42.655Z",
+  "database": "essjt_school_system_staging",
+  "passed": 42,
+  "failed": 0,
+  "results": [
+    {
+      "name": "staging environment guard passed (all URLs target the staging database)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "pre-run cleanup of stg-e2e-% rows",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "staging server starts and serves requests",
+      "ok": true,
+      "evidence": "http://127.0.0.1:4333"
+    },
+    {
+      "name": "admin CSRF login works",
+      "ok": true,
+      "evidence": "status=302"
+    },
+    {
+      "name": "admin session exposes role admin",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "admin /admin/users is authenticated (renders on the full schema; 500 here is the minimal staging schema)",
+      "ok": true,
+      "evidence": "status=500"
+    },
+    {
+      "name": "student registration accepted as pending",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "honeypot submission is swallowed with no database write",
+      "ok": true,
+      "evidence": "status=200, rows=0"
+    },
+    {
+      "name": "weak password is rejected with 422",
+      "ok": true,
+      "evidence": "status=422"
+    },
+    {
+      "name": "duplicate username is 409",
+      "ok": true,
+      "evidence": "status=409, fields=null"
+    },
+    {
+      "name": "duplicate email is 409",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "duplicate attempts wrote no extra rows",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "pending (Inactive) student cannot sign in",
+      "ok": true,
+      "evidence": "status=302"
+    },
+    {
+      "name": "admin sees the pending registration with a count",
+      "ok": true,
+      "evidence": "status=200, count=1"
+    },
+    {
+      "name": "admin approval succeeds",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "approved account is Active + approved",
+      "ok": true,
+      "evidence": "status=Active, registration_status=approved"
+    },
+    {
+      "name": "approving/rejecting a non-pending registration is 409",
+      "ok": true,
+      "evidence": "status=409"
+    },
+    {
+      "name": "approved student can sign in",
+      "ok": true,
+      "evidence": "status=302"
+    },
+    {
+      "name": "student session role + no forced change",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "approved student portal access is authenticated (200 on full schema; 500 = minimal staging schema)",
+      "ok": true,
+      "evidence": "status=500"
+    },
+    {
+      "name": "student cannot call the admin registration API",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "student cannot approve",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "student cannot reset passwords",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "admin reset-password returns a one-time temporary password",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "old password no longer signs in",
+      "ok": true,
+      "evidence": "status=302"
+    },
+    {
+      "name": "temporary password signs in",
+      "ok": true,
+      "evidence": "status=302"
+    },
+    {
+      "name": "temporary-password session carries mustChangePassword",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "temporary-password session is forced to /change-password",
+      "ok": true,
+      "evidence": "status=307, location=/change-password"
+    },
+    {
+      "name": "GET /change-password renders for the forced session",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "change-password with a wrong current password is 400",
+      "ok": true,
+      "evidence": "status=400"
+    },
+    {
+      "name": "change-password with the temporary password succeeds",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "must_change_password cleared after the change",
+      "ok": true,
+      "evidence": "must_change_password=0"
+    },
+    {
+      "name": "new password signs in without the forced flag",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "portal access restored after the change (authenticated; 500 = minimal staging schema)",
+      "ok": true,
+      "evidence": "status=500"
+    },
+    {
+      "name": "teacher registration accepted as pending",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "admin rejection succeeds",
+      "ok": true,
+      "evidence": "status=200"
+    },
+    {
+      "name": "rejected account stays Inactive + rejected",
+      "ok": true,
+      "evidence": "status=Inactive, registration_status=rejected"
+    },
+    {
+      "name": "rejected teacher cannot sign in",
+      "ok": true,
+      "evidence": "status=302"
+    },
+    {
+      "name": "rate limiting is env-configurable (server ran with max=100 without self-blocking)",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "admin logout clears the session cookie",
+      "ok": true,
+      "evidence": "status=302"
+    },
+    {
+      "name": "admin portal denied after logout",
+      "ok": true,
+      "evidence": ""
+    },
+    {
+      "name": "post-run cleanup leaves no e2e rows",
+      "ok": true,
+      "evidence": "rows=0"
+    }
+  ]
+}
