@@ -1,7 +1,33 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { db } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import { verifyStoredPassword } from '@/lib/password';
+import { fetchUserRegistrationFlags } from '@/lib/user-flags';
+
+/**
+ * Roles that exist in the live `users.role` enum
+ * (admin, teacher, student). There is no `parent` role in the live schema.
+ */
+export const LIVE_ROLES = ['admin', 'teacher', 'student'] as const;
+export type LiveRole = (typeof LIVE_ROLES)[number];
+
+export function isLiveRole(value: unknown): value is LiveRole {
+  return typeof value === 'string' && (LIVE_ROLES as readonly string[]).includes(value);
+}
+
+/**
+ * `users.status` is a nullable MySQL enum with values
+ * Active / Inactive / Suspended / Graduated.
+ *
+ * Rows created outside the PHP forms may have NULL. PHP's own checks are
+ * inconsistent (login.php does not check status at all; student-login.php
+ * requires exactly 'Active'). This build treats NULL as active, matching the
+ * column default, and requires an explicit 'Active' for every other value.
+ */
+export function isActiveStatus(status: unknown): boolean {
+  if (status === null || status === undefined) return true;
+  return String(status).trim().toLowerCase() === 'active';
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,40 +44,58 @@ export const authOptions: NextAuthOptions = {
 
         if (!username || !password) return null;
 
-        // Use the Prisma model that belongs to this application.
-        // The previous raw SQL queried `public.users` with legacy column
-        // names and returned an empty schoolId, which did not match the
-        // current Prisma schema or the application's school-scoped queries.
-        const user = await db.user.findUnique({
-          where: { username },
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            password: true,
-            role: true,
-            status: true,
-            schoolId: true,
-            student: { select: { fullName: true } },
-            teacher: { select: { fullName: true } },
-            parent: { select: { fullName: true } },
-          },
-        });
+        // Live `users` columns: id, username, password, full_name, email,
+        // phone, role, status, created_at. There is no school_id column and
+        // no parent relation.
+        const select = {
+          id: true,
+          username: true,
+          email: true,
+          password: true,
+          fullName: true,
+          role: true,
+          status: true,
+        } as const;
 
-        if (!user || user.status.trim().toLowerCase() !== 'active') {
-          return null;
+        // Parity with the PHP entry points: login.php looks students and
+        // teachers up by email, while admin-login.php uses username. Accept
+        // either identifier so existing accounts can sign in.
+        let user = await db.user.findUnique({ where: { username }, select });
+
+        if (!user) {
+          user = await db.user.findFirst({ where: { email: username }, select });
         }
 
-        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!user) return null;
+        if (!isActiveStatus(user.status)) return null;
+
+        const passwordMatch = await verifyStoredPassword(password, user.password);
         if (!passwordMatch) return null;
 
+        const role = String(user.role).toLowerCase();
+        if (!isLiveRole(role)) return null;
+
+        // The forced-change flag lives in the ADDITIVE must_change_password
+        // column (approved but not yet applied to the live schema); the
+        // guarded read answers the safe default (false) until it exists.
+        let mustChangePassword = false;
+        try {
+          const flags = await fetchUserRegistrationFlags(Number(user.id));
+          mustChangePassword = flags?.mustChangePassword ?? false;
+        } catch {
+          mustChangePassword = false;
+        }
+
         return {
-          id: user.id,
-          name: user.student?.fullName ?? user.teacher?.fullName ?? user.parent?.fullName ?? user.username,
+          id: String(user.id),
+          name: user.fullName || user.username,
           email: user.email,
-          role: user.role,
-          schoolId: user.schoolId,
+          role,
           username: user.username,
+          mustChangePassword,
+          // The live database is single-school and has no school_id column.
+          // Kept as an empty string so existing type contracts stay stable.
+          schoolId: '',
         };
       },
     }),
@@ -64,8 +108,8 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.schoolId = user.schoolId;
         token.username = user.username;
+        token.mustChangePassword = user.mustChangePassword === true;
       }
-
       return token;
     },
 
@@ -75,8 +119,8 @@ export const authOptions: NextAuthOptions = {
         session.user.role = String(token.role ?? '');
         session.user.schoolId = String(token.schoolId ?? '');
         session.user.username = String(token.username ?? '');
+        session.user.mustChangePassword = token.mustChangePassword === true;
       }
-
       return session;
     },
   },

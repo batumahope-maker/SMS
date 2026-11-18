@@ -8,6 +8,8 @@ declare module 'next-auth' {
       role: string;
       schoolId: string;
       username: string;
+      /** True when the account holds a temporary password and must visit /change-password. */
+      mustChangePassword: boolean;
     } & DefaultSession['user'];
   }
 
@@ -15,6 +17,7 @@ declare module 'next-auth' {
     role: string;
     schoolId: string;
     username: string;
+    mustChangePassword?: boolean;
   }
 }
 
@@ -24,5 +27,6 @@ declare module 'next-auth/jwt' {
     role?: string;
     schoolId?: string;
     username?: string;
+    mustChangePassword?: boolean;
   }
 }

@@ -1,0 +1,356 @@
+// ============================================================================
+// ESSJT live-mirror Prisma schema
+// ----------------------------------------------------------------------------
+// Purpose:
+//   Describe the *existing* authoritative MySQL database (essjt_school_system)
+//   exactly as it is, so Prisma can read and write it without changing it.
+//
+// Source of truth:
+//   Read-only audit report: ESSJT_MYSQL_AUDIT.html
+//   Database: essjt_school_system (MariaDB 10.4.32, utf8mb4_unicode_ci)
+//   12 tables, 2,656 rows at audit time.
+//
+// This file is an ARTIFACT ONLY. It has not been applied to any database.
+// Do not run `prisma db push`, `prisma migrate`, `prisma db seed` or
+// `prisma migrate reset` with this schema against the live database.
+//
+// Conventions in this file:
+//   - Integer AUTO_INCREMENT primary keys stay `Int @id @default(autoincrement())`.
+//   - MySQL display widths such as int(11) are a display attribute only;
+//     Prisma represents them as plain Int.
+//   - snake_case table/column names are preserved with @@map / @map.
+//   - Existing index names are preserved with map: "...".
+//   - Enum value spelling and casing are preserved exactly as in MySQL.
+//   - `@default(now())` mirrors the live `DEFAULT current_timestamp()` on
+//     timestamp columns; `@db.Timestamp(0)` keeps the live zero precision.
+//   - `tinyint(1)` columns are represented as Boolean, which is Prisma's
+//     native MySQL mapping for TINYINT(1).
+//   - No model, column, index or relation has been invented.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// MySQL enum vocabulary, copied verbatim from the live column definitions.
+// ----------------------------------------------------------------------------
+
+enum UserRole {
+  student
+  teacher
+  admin
+}
+
+enum UserStatus {
+  Active
+  Inactive
+  Suspended
+  Graduated
+}
+
+enum AttendanceStatus {
+  Present
+  Absent
+  Late
+}
+
+enum AnnouncementPriority {
+  Urgent
+  High
+  Normal
+  Low
+}
+
+enum RuleSeverity {
+  Critical
+  Serious
+  Warning
+  Info
+}
+
+// ----------------------------------------------------------------------------
+// users - 1,311 rows
+// ----------------------------------------------------------------------------
+model User {
+  id        Int        @id @default(autoincrement())
+  username  String     @unique(map: "username") @db.VarChar(100)
+  password  String     @db.VarChar(255)
+  fullName  String     @map("full_name") @db.VarChar(200)
+  email     String     @unique(map: "email") @db.VarChar(150)
+  phone     String?    @db.VarChar(20)
+  role      UserRole
+  // Live definition: enum('Active','Inactive','Suspended','Graduated') DEFAULT 'Active'
+  // Kept nullable because the live column allows NULL.
+  status    UserStatus? @default(Active)
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamp(0)
+
+  // Declared one-to-one profile links (students.user_id, teachers.user_id,
+  // admins.user_id are each UNIQUE and nullable in the live schema).
+  student   Student?
+  teacher   Teacher?
+  admin     Admin?
+
+  // Declared one-to-many links. In the live schema these FKs all point at
+  // users.id - not at students.id or teachers.id. See the models below.
+  attendanceRecords Attendance[]
+  marks             Mark[]
+  payments          Payment[]
+  announcements     Announcement[]
+  schedules         SchoolSchedule[]
+
+  // NOTE: the live table also has a redundant non-unique index named
+  // `username_2` on `username`. It duplicates the unique `username` index and
+  // is intentionally not reproduced (no functional value, extra write cost).
+
+  @@index([role], map: "role")
+  @@index([status], map: "status")
+  @@map("users")
+}
+
+// ----------------------------------------------------------------------------
+// admins - 1 row
+// ----------------------------------------------------------------------------
+// No PHP file in the repository references this table (0 of 110 files), and no
+// greenfield Prisma model covers it. It is modelled anyway because it exists
+// in the live database and must not be dropped.
+model Admin {
+  id         Int     @id @default(autoincrement())
+  userId     Int?    @unique(map: "user_id") @map("user_id")
+  adminLevel String? @map("admin_level") @db.VarChar(50)
+
+  user       User?   @relation(fields: [userId], references: [id])
+
+  @@map("admins")
+}
+
+// ----------------------------------------------------------------------------
+// students - 1,250 rows
+// ----------------------------------------------------------------------------
+// IMPORTANT: `student_id` here is a business/roll number (varchar), not a
+// primary key. The numeric primary key is `id`. `user_id` is nullable in the
+// live schema even though it is UNIQUE, so the relation is optional.
+// The name of the student lives in users.full_name; it is not duplicated here
+// because the live table has no full_name column.
+model Student {
+  id             Int       @id @default(autoincrement())
+  userId         Int?      @unique(map: "user_id") @map("user_id")
+  studentId      String?   @unique(map: "student_id") @map("student_id") @db.VarChar(20)
+  trade          String?   @db.VarChar(100)
+  level          String?   @db.VarChar(20)
+  section        String?   @db.VarChar(10)
+  gender         String?   @db.VarChar(10)
+  dateOfBirth    DateTime? @map("date_of_birth") @db.Date
+  guardianName   String?   @map("guardian_name") @db.VarChar(200)
+  guardianPhone  String?   @map("guardian_phone") @db.VarChar(20)
+  enrollmentDate DateTime? @map("enrollment_date") @db.Date
+  // decimal(10,2) is used for money; Prisma Decimal avoids binary float drift.
+  feePaid        Decimal?  @default(0.00) @map("fee_paid") @db.Decimal(10, 2)
+  feeBalance     Decimal?  @default(0.00) @map("fee_balance") @db.Decimal(10, 2)
+
+  user           User?     @relation(fields: [userId], references: [id])
+
+  @@map("students")
+}
+
+// ----------------------------------------------------------------------------
+// teachers - 60 rows
+// ----------------------------------------------------------------------------
+// The live table stores one free-text `subject` (singular), not a `subjects`
+// list and not a FK to a Subject table. No such table exists, so none is added.
+model Teacher {
+  id         Int       @id @default(autoincrement())
+  userId     Int?      @unique(map: "user_id") @map("user_id")
+  teacherId  String?   @unique(map: "teacher_id") @map("teacher_id") @db.VarChar(20)
+  subject    String?   @db.VarChar(100)
+  department String?   @db.VarChar(100)
+  hireDate   DateTime? @map("hire_date") @db.Date
+
+  user       User?     @relation(fields: [userId], references: [id])
+
+  @@map("teachers")
+}
+
+// ----------------------------------------------------------------------------
+// announcements - 3 rows
+// ----------------------------------------------------------------------------
+model Announcement {
+  id             Int                  @id @default(autoincrement())
+  title          String               @db.VarChar(200)
+  content        String?              @db.Text
+  priority       AnnouncementPriority? @default(Normal)
+  targetAudience String?              @map("target_audience") @db.VarChar(50)
+  createdBy      Int?                 @map("created_by")
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamp(0)
+
+  // Declared FK: announcements.created_by -> users.id
+  author         User?                @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy], map: "created_by")
+  @@map("announcements")
+}
+
+// ----------------------------------------------------------------------------
+// attendance - 0 rows at audit time
+// ----------------------------------------------------------------------------
+// IMPORTANT: the declared FK is attendance.student_id -> users.id.
+// It does NOT reference students.id, even though the column is named
+// student_id. The relation is therefore to User, not to Student.
+// Some legacy PHP pages join this column to students.id instead; that is a PHP
+// defect, not a schema fact, and is not reflected here.
+model Attendance {
+  id        Int               @id @default(autoincrement())
+  studentId Int?              @map("student_id")
+  date      DateTime?         @db.Date
+  status    AttendanceStatus? @default(Present)
+  notes     String?           @db.Text
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamp(0)
+
+  student   User?             @relation(fields: [studentId], references: [id])
+
+  // Live index: UNIQUE KEY unique_attendance (student_id, date)
+  // No separate @@index([studentId]) is added: the unique index already
+  // provides a leftmost-prefix lookup on student_id.
+  @@unique([studentId, date], map: "unique_attendance")
+  @@map("attendance")
+}
+
+// ----------------------------------------------------------------------------
+// marks - 0 rows at audit time
+// ----------------------------------------------------------------------------
+// IMPORTANT: marks.student_id -> users.id (declared FK), not students.id.
+// `marks` is the score; `max_marks` is the denominator. `year` is an integer
+// year, and `subject` is free text - there is no Subject table in the live DB.
+model Mark {
+  id        Int      @id @default(autoincrement())
+  studentId Int?     @map("student_id")
+  subject   String?  @db.VarChar(100)
+  term      String?  @db.VarChar(50)
+  year      Int?
+  marks     Decimal? @db.Decimal(5, 2)
+  maxMarks  Decimal? @default(100.00) @map("max_marks") @db.Decimal(5, 2)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  student   User?    @relation(fields: [studentId], references: [id])
+
+  @@index([studentId], map: "student_id")
+  @@map("marks")
+}
+
+// ----------------------------------------------------------------------------
+// payments - 0 rows at audit time
+// ----------------------------------------------------------------------------
+// IMPORTANT: payments.student_id -> users.id (declared FK), not students.id.
+// `reference` is free text (varchar 100); there is no unique receipt number in
+// the live schema, so none is invented here.
+model Payment {
+  id            Int       @id @default(autoincrement())
+  studentId     Int?      @map("student_id")
+  amount        Decimal?  @db.Decimal(10, 2)
+  paymentDate   DateTime? @map("payment_date") @db.Date
+  paymentMethod String?   @map("payment_method") @db.VarChar(50)
+  reference     String?   @db.VarChar(100)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+
+  student       User?     @relation(fields: [studentId], references: [id])
+
+  @@index([studentId], map: "student_id")
+  @@map("payments")
+}
+
+// ----------------------------------------------------------------------------
+// school_events - 3 rows
+// ----------------------------------------------------------------------------
+// No declared foreign keys. `title` is nullable in the live table (unlike
+// announcements.title). `is_active` is tinyint(1) DEFAULT 1 and is represented
+// as a nullable Boolean.
+model SchoolEvent {
+  id             Int       @id @default(autoincrement())
+  title          String?   @db.VarChar(200)
+  description    String?   @db.Text
+  eventType      String?   @map("event_type") @db.VarChar(50)
+  eventDate      DateTime? @map("event_date") @db.Date
+  // Prisma has no standalone TIME scalar for MySQL; DateTime @db.Time(0)
+  // mirrors the live `time` column without changing its storage type.
+  eventTime      DateTime? @map("event_time") @db.Time(0)
+  location       String?   @db.VarChar(200)
+  targetAudience String?   @map("target_audience") @db.VarChar(50)
+  isActive       Boolean?  @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+
+  @@map("school_events")
+}
+
+// ----------------------------------------------------------------------------
+// school_rules - 4 rows
+// ----------------------------------------------------------------------------
+// No declared foreign keys. Enum casing is preserved exactly.
+model SchoolRule {
+  id          Int           @id @default(autoincrement())
+  category    String?       @db.VarChar(100)
+  ruleNumber  String?       @map("rule_number") @db.VarChar(20)
+  title       String?       @db.VarChar(200)
+  description String?       @db.Text
+  severity    RuleSeverity? @default(Info)
+  appliesTo   String?       @map("applies_to") @db.VarChar(50)
+  isActive    Boolean?      @default(true) @map("is_active")
+
+  @@map("school_rules")
+}
+
+// ----------------------------------------------------------------------------
+// school_schedule - 0 rows at audit time
+// ----------------------------------------------------------------------------
+// IMPORTANT: school_schedule.teacher_id -> users.id (declared FK), not
+// teachers.id. `day_of_week` stores day NAMES as a varchar ("Monday", ...),
+// not an integer, and the PHP code sorts with FIELD(...) accordingly, so it is
+// kept as String.
+model SchoolSchedule {
+  id         Int       @id @default(autoincrement())
+  teacherId  Int?      @map("teacher_id")
+  trade      String?   @db.VarChar(100)
+  level      String?   @db.VarChar(20)
+  section    String?   @db.VarChar(10)
+  subject    String?   @db.VarChar(100)
+  dayOfWeek  String?   @map("day_of_week") @db.VarChar(20)
+  // See SchoolEvent.eventTime: TIME is represented as DateTime @db.Time(0).
+  startTime  DateTime? @map("start_time") @db.Time(0)
+  endTime    DateTime? @map("end_time") @db.Time(0)
+  roomNumber String?   @map("room_number") @db.VarChar(50)
+  notes      String?   @db.Text
+  isActive   Boolean?  @default(true) @map("is_active")
+
+  teacher    User?     @relation(fields: [teacherId], references: [id])
+
+  @@index([teacherId], map: "teacher_id")
+  @@map("school_schedule")
+}
+
+// ----------------------------------------------------------------------------
+// login_activity - 24 rows
+// ----------------------------------------------------------------------------
+// The live table declares NO foreign keys. `user_id`, `role`, `username` and
+// `full_name` are denormalised snapshots written at login time so the audit
+// trail survives later profile changes/deletions. For that reason `user_id` is
+// deliberately left as a plain scalar: adding a Prisma relation would invent a
+// constraint that the database does not have.
+model LoginActivity {
+  id         Int      @id @default(autoincrement())
+  userId     Int?     @map("user_id")
+  role       String?  @db.VarChar(20)
+  username   String?  @db.VarChar(100)
+  fullName   String?  @map("full_name") @db.VarChar(200)
+  ipAddress  String?  @map("ip_address") @db.VarChar(50)
+  loggedInAt DateTime @default(now()) @map("logged_in_at") @db.Timestamp(0)
+
+  // Live indexes: `role` (non-unique) and `logged_in_at` (non-unique).
+  // `user_id` has no index in the live schema, so none is added here.
+  @@index([role], map: "role")
+  @@index([loggedInAt], map: "logged_in_at")
+  @@map("login_activity")
+}
