@@ -2,52 +2,83 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { TeachersClient } from '@/components/teachers/TeachersClient';
+import { formatDate } from '@/lib/format';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
 export const dynamic = 'force-dynamic';
 
 export default async function TeachersPage() {
   const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') redirect('/login');
 
-  if (!session || session.user.role !== 'admin') {
-    redirect('/login');
-  }
-
-  // Fetch teachers with related data
   const teachers = await db.teacher.findMany({
-    where: { schoolId: session.user.schoolId },
+    orderBy: { id: 'asc' },
     include: {
       user: {
-        select: { email: true, phone: true },
+        select: { fullName: true, username: true, email: true, phone: true, status: true },
       },
-      classes: true,
     },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  // Fetch classes for the form
-  const classes = await db.class.findMany({
-    where: { schoolId: session.user.schoolId, status: 'active' },
-    orderBy: { name: 'asc' },
   });
 
   return (
-    <TeachersClient 
-      teachers={teachers.map(t => ({
-        id: t.id,
-        teacherId: t.teacherId,
-        fullName: t.fullName,
-        gender: t.gender,
-        phone: t.phone,
-        subjects: t.subjects,
-        department: t.department,
-        qualification: t.qualification,
-        salary: t.salary,
-        status: t.status,
-        joinDate: t.joinDate,
-        email: t.user?.email || null,
-        classCount: t.classes.length,
-      }))} 
-      classes={classes} 
-    />
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Teachers</h1>
+        <p className="text-sm text-muted-foreground">
+          Read-only view of the live <code>teachers</code> table ({teachers.length} records).
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Teacher records</CardTitle>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Teacher ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Subject</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Hire date</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {teachers.map((teacher) => (
+                <TableRow key={teacher.id}>
+                  <TableCell className="font-mono text-xs">
+                    {teacher.teacherId ?? '—'}
+                  </TableCell>
+                  <TableCell>
+                    {teacher.user?.fullName ?? teacher.user?.username ?? '—'}
+                  </TableCell>
+                  <TableCell>{teacher.subject ?? '—'}</TableCell>
+                  <TableCell>{teacher.department ?? '—'}</TableCell>
+                  <TableCell>{formatDate(teacher.hireDate)}</TableCell>
+                  <TableCell>{teacher.user?.status ?? '—'}</TableCell>
+                </TableRow>
+              ))}
+              {teachers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    No teacher records found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

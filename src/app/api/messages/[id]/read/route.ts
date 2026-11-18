@@ -1,24 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { NextResponse } from 'next/server';
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getServerSession(authOptions);
+/**
+ * The live essjt_school_system database has no `messages` table, so there is
+ * no message read-state to update.
+ */
+const BODY = {
+  error: 'Not available',
+  reason: 'The live essjt_school_system schema has no messages table.',
+};
 
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export async function PATCH() {
+  return NextResponse.json(BODY, { status: 501 });
+}
 
-  const { id } = await params;
-
-  await db.message.updateMany({
-    where: { id, receiverId: session.user.id },
-    data: { read: true },
-  });
-
-  return NextResponse.json({ success: true });
+export async function POST() {
+  return NextResponse.json(BODY, { status: 501 });
 }

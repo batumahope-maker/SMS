@@ -3,7 +3,38 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { StudentDashboardClient } from '@/components/dashboards/StudentDashboard';
+
 export const dynamic = 'force-dynamic';
+
+const WEEKDAYS = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
+
+function toNumber(value: unknown): number {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function timeLabel(value: Date | null): string {
+  if (!value) return '';
+  return value.toISOString().slice(11, 16);
+}
+
+function gradeFor(score: number, max: number): string | null {
+  if (!Number.isFinite(score) || !Number.isFinite(max) || max <= 0) return null;
+  const pct = (score / max) * 100;
+  if (pct >= 80) return 'A';
+  if (pct >= 70) return 'B';
+  if (pct >= 60) return 'C';
+  if (pct >= 50) return 'D';
+  return 'F';
+}
 
 export default async function StudentDashboardPage() {
   const session = await getServerSession(authOptions);
@@ -12,137 +43,124 @@ export default async function StudentDashboardPage() {
     redirect('/login');
   }
 
-  // Get student info
+  const userId = Number(session.user.id);
+  if (!Number.isInteger(userId)) redirect('/login');
+
   const student = await db.student.findFirst({
-    where: { userId: session.user.id },
-    include: {
-      class: {
-        include: {
-          subjects: true,
-        },
-      },
-    },
+    where: { userId },
+    include: { user: { select: { fullName: true, username: true } } },
   });
 
-  if (!student) {
-    redirect('/login');
-  }
+  if (!student) redirect('/login');
 
-  // Get today's schedule
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const schedules = student.classId
-    ? await db.schedule.findMany({
-        where: {
-          classId: student.classId,
-          dayOfWeek: dayOfWeek,
-        },
-        orderBy: { startTime: 'asc' },
-      })
-    : [];
+  const classCombination = [student.trade, student.level, student.section]
+    .filter(Boolean)
+    .join(' ');
 
-  // Get recent marks
-  const recentMarks = await db.mark.findMany({
-    where: { studentId: student.id },
+  const scheduleRows = await db.schoolSchedule.findMany({
+    where: {
+      trade: student.trade ?? undefined,
+      level: student.level ?? undefined,
+      section: student.section ?? undefined,
+      isActive: true,
+      dayOfWeek: WEEKDAYS[new Date().getDay()],
+    },
+    orderBy: { startTime: 'asc' },
+  });
+
+  // IMPORTANT: marks.student_id and attendance.student_id reference users.id
+  // (declared FK), not students.id. The session id is the users.id.
+  const markRows = await db.mark.findMany({
+    where: { studentId: userId },
     take: 10,
     orderBy: { createdAt: 'desc' },
-    include: {
-      subject: { select: { name: true, code: true } },
-    },
   });
 
-  // Get attendance summary
-  const attendance = await db.attendance.findMany({
-    where: { studentId: student.id },
+  const attendanceRows = await db.attendance.findMany({
+    where: { studentId: userId },
     orderBy: { date: 'desc' },
     take: 30,
   });
 
+  const paymentRows = await db.payment.findMany({
+    where: { studentId: userId },
+    orderBy: [{ paymentDate: 'desc' }, { id: 'desc' }],
+    take: 5,
+  });
+
+  const announcements = await db.announcement.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      priority: true,
+      createdAt: true,
+      targetAudience: true,
+    },
+  });
+
+  const visibleAnnouncements = announcements.filter((a) => {
+    const audience = String(a.targetAudience ?? 'all').trim().toLowerCase();
+    return audience === '' || audience === 'all' || audience === 'students' || audience === 'student';
+  });
+
   const attendanceSummary = {
-    present: attendance.filter((a) => a.status === 'present').length,
-    absent: attendance.filter((a) => a.status === 'absent').length,
-    late: attendance.filter((a) => a.status === 'late').length,
-    excused: attendance.filter((a) => a.status === 'excused').length,
+    present: attendanceRows.filter(
+      (a) => String(a.status ?? '').toLowerCase() === 'present'
+    ).length,
+    absent: attendanceRows.filter((a) => String(a.status ?? '').toLowerCase() === 'absent')
+      .length,
+    late: attendanceRows.filter((a) => String(a.status ?? '').toLowerCase() === 'late').length,
+    excused: 0,
   };
 
-  // Get pending homework
-  const pendingHomework = await db.homework.findMany({
-    where: {
-      classId: student.classId || undefined,
-      dueDate: { gte: new Date() },
-    },
-    take: 5,
-    orderBy: { dueDate: 'asc' },
-    include: {
-      subject: { select: { name: true } },
-      submissions: {
-        where: { studentId: student.id },
-      },
-    },
-  });
-
-  // Get fee summary
-  const payments = await db.payment.findMany({
-    where: { studentId: student.id },
-    orderBy: { paidAt: 'desc' },
-    take: 5,
-  });
-
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-
-  // Get announcements
-  const announcements = await db.announcement.findMany({
-    where: {
-      OR: [
-        { audience: 'all' },
-        { audience: 'students' },
-      ],
-    },
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-  });
+  const totalPaid = paymentRows.reduce((sum, p) => sum + toNumber(p.amount), 0);
 
   const stats = {
     student: {
-      id: student.id,
-      studentId: student.studentId,
-      fullName: student.fullName,
+      id: String(student.id),
+      studentId: student.studentId ?? '',
+      fullName: student.user?.fullName ?? student.user?.username ?? 'Student',
       trade: student.trade,
       level: student.level,
       section: student.section,
-      class: student.class?.name ?? null,
-      feePaid: student.feePaid,
-      feeBalance: student.feeBalance,
+      class: classCombination || null,
+      feePaid: toNumber(student.feePaid),
+      feeBalance: toNumber(student.feeBalance),
     },
-    todaySchedule: schedules,
-    recentMarks: recentMarks.map((m) => ({
-      id: m.id,
-      marks: m.marks,
-      grade: m.grade,
-      term: m.term,
-      examType: m.examType,
-      subject: m.subject,
+    todaySchedule: scheduleRows.map((row) => ({
+      id: String(row.id),
+      startTime: timeLabel(row.startTime),
+      endTime: timeLabel(row.endTime),
+      subjectName: row.subject ?? 'Lesson',
+      teacherName: null,
+      room: row.roomNumber,
+    })),
+    recentMarks: markRows.map((row) => ({
+      id: String(row.id),
+      marks: toNumber(row.marks),
+      grade: gradeFor(toNumber(row.marks), toNumber(row.maxMarks)),
+      term: row.term ?? '',
+      examType: row.term ?? '',
+      subject: { name: row.subject ?? '', code: null },
     })),
     attendanceSummary,
-    pendingHomework: pendingHomework.map((h) => ({
-      id: h.id,
-      title: h.title,
-      dueDate: h.dueDate,
-      subject: h.subject,
-      submitted: h.submissions.length > 0,
+    // No homework table exists in the live schema.
+    pendingHomework: [],
+    recentPayments: paymentRows.map((p) => ({
+      id: String(p.id),
+      amount: toNumber(p.amount),
+      receiptNumber: p.reference ?? 'No reference',
+      paidAt: p.paymentDate ?? p.createdAt,
+      paidFor: null,
     })),
-    recentPayments: payments.map((p) => ({
-      id: p.id,
-      amount: p.amount,
-      receiptNumber: p.receiptNumber,
-      paidAt: p.paidAt,
-      paidFor: p.paidFor,
-    })),
-    announcements: announcements.map((a) => ({
-      id: a.id,
+    announcements: visibleAnnouncements.map((a) => ({
+      id: String(a.id),
       title: a.title,
-      content: a.content,
-      priority: a.priority,
+      content: a.content ?? '',
+      priority: String(a.priority ?? 'Normal'),
       createdAt: a.createdAt,
     })),
     totalPaid,

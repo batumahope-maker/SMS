@@ -1,68 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { NextResponse } from 'next/server';
+
+/**
+ * The live essjt_school_system database has no `messages` table.
+ */
+const BODY = {
+  error: 'Not available',
+  reason: 'The live essjt_school_system schema has no messages table.',
+};
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const [received, sent] = await Promise.all([
-    db.message.findMany({
-      where: { receiverId: session.user.id },
-      include: { sender: { select: { username: true, role: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    }),
-    db.message.findMany({
-      where: { senderId: session.user.id },
-      include: { receiver: { select: { username: true, role: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    }),
-  ]);
-
-  return NextResponse.json({ received, sent });
+  return NextResponse.json(BODY, { status: 501 });
 }
 
-export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function POST() {
+  return NextResponse.json(BODY, { status: 501 });
+}
 
-  const { receiverId, subject, content } = await request.json();
-  if (!receiverId || !content) {
-    return NextResponse.json({ error: 'receiverId and content are required' }, { status: 400 });
-  }
+export async function PUT() {
+  return NextResponse.json(BODY, { status: 501 });
+}
 
-  // Verify receiver exists in same school
-  const receiver = await db.user.findFirst({
-    where: { id: receiverId, schoolId: session.user.schoolId },
-  });
-  if (!receiver) return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
-
-  const message = await db.message.create({
-    data: {
-      senderId: session.user.id,
-      receiverId,
-      subject: subject || null,
-      content,
-    },
-    include: {
-      sender: { select: { username: true, role: true } },
-      receiver: { select: { username: true, role: true } },
-    },
-  });
-
-  // Create notification for recipient
-  await db.notification.create({
-    data: {
-      userId: receiverId,
-      title: `New message from ${session.user.username || 'user'}`,
-      message: subject || content.substring(0, 80),
-      type: 'info',
-      link: `/${receiver.role}/messages`,
-    },
-  });
-
-  return NextResponse.json(message, { status: 201 });
+export async function DELETE() {
+  return NextResponse.json(BODY, { status: 501 });
 }

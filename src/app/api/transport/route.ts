@@ -1,38 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { NextResponse } from 'next/server';
+
+/**
+ * The live essjt_school_system database has no `vehicles`,
+ * `transport_routes` or `transport_assignments` tables.
+ */
+const BODY = {
+  error: 'Not available',
+  reason:
+    'The live essjt_school_system schema has no transport tables (vehicles, transport_routes, transport_assignments).',
+};
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const vehicles = await db.vehicle.findMany({
-    where: { schoolId: session.user.schoolId },
-    include: { routes: { include: { _count: { select: { assignments: true } } } } },
-    orderBy: { createdAt: 'desc' },
-  });
-  return NextResponse.json(vehicles);
+  return NextResponse.json(BODY, { status: 501 });
 }
 
-export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function POST() {
+  return NextResponse.json(BODY, { status: 501 });
+}
 
-  const body = await request.json();
-  const { vehicleNumber, driverName, driverPhone, capacity, vehicleType } = body;
+export async function PUT() {
+  return NextResponse.json(BODY, { status: 501 });
+}
 
-  if (!vehicleNumber || !driverName || !driverPhone || !capacity) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-  }
-
-  const vehicle = await db.vehicle.create({
-    data: {
-      schoolId: session.user.schoolId,
-      vehicleNumber, driverName, driverPhone,
-      capacity: parseInt(capacity),
-      vehicleType: vehicleType || null,
-    },
-  });
-  return NextResponse.json(vehicle, { status: 201 });
+export async function DELETE() {
+  return NextResponse.json(BODY, { status: 501 });
 }

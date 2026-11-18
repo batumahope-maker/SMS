@@ -1,44 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { NextResponse } from 'next/server';
+
+/**
+ * The live essjt_school_system database has no `rooms` or `room_allocations`
+ * tables.
+ */
+const BODY = {
+  error: 'Not available',
+  reason:
+    'The live essjt_school_system schema has no hostel tables (rooms, room_allocations).',
+};
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const rooms = await db.room.findMany({
-    where: { schoolId: session.user.schoolId },
-    include: {
-      allocations: {
-        where: { vacatedAt: null },
-        include: { student: { select: { fullName: true, studentId: true } } },
-      },
-    },
-    orderBy: { roomNumber: 'asc' },
-  });
-  return NextResponse.json(rooms);
+  return NextResponse.json(BODY, { status: 501 });
 }
 
-export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function POST() {
+  return NextResponse.json(BODY, { status: 501 });
+}
 
-  const body = await request.json();
-  const { roomNumber, block, floor, capacity, gender } = body;
+export async function PUT() {
+  return NextResponse.json(BODY, { status: 501 });
+}
 
-  if (!roomNumber || !capacity) {
-    return NextResponse.json({ error: 'Room number and capacity are required' }, { status: 400 });
-  }
-
-  const room = await db.room.create({
-    data: {
-      schoolId: session.user.schoolId,
-      roomNumber, capacity: parseInt(capacity),
-      block: block || null,
-      floor: floor ? parseInt(floor) : null,
-      gender: gender || null,
-    },
-  });
-  return NextResponse.json(room, { status: 201 });
+export async function DELETE() {
+  return NextResponse.json(BODY, { status: 501 });
 }

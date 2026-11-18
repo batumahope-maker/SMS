@@ -1,73 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { NextResponse } from 'next/server';
 
-// GET - Fetch all classes
+/**
+ * The live essjt_school_system database has no `classes` table.
+ * A class is represented only by the (trade, level, section) columns on students.
+ * This endpoint is intentionally read-disabled rather than inventing schema.
+ */
+const BODY = {
+  error: 'Not available',
+  reason:
+    'The live essjt_school_system schema has no classes table. Classes are derived from students.trade/level/section.',
+};
+
 export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const classes = await db.class.findMany({
-      where: { schoolId: session.user.schoolId },
-      include: {
-        teacher: { select: { fullName: true, teacherId: true } },
-        students: { where: { status: 'active' }, select: { id: true } },
-        subjects: { select: { id: true } },
-      },
-      orderBy: [{ level: 'asc' }, { section: 'asc' }],
-    });
-
-    return NextResponse.json(classes);
-  } catch (error) {
-    console.error('Error fetching classes:', error);
-    return NextResponse.json({ error: 'Failed to fetch classes' }, { status: 500 });
-  }
+  return NextResponse.json(BODY, { status: 501 });
 }
 
-// POST - Create a new class
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export async function POST() {
+  return NextResponse.json(BODY, { status: 501 });
+}
 
-    const body = await request.json();
-    const { name, trade, level, section, combination, systemType, teacherId, academicYear } = body;
+export async function PUT() {
+  return NextResponse.json(BODY, { status: 501 });
+}
 
-    const newClass = await db.class.create({
-      data: {
-        schoolId: session.user.schoolId,
-        name: name || (systemType === 'reb'
-          ? `${level}${combination ? ' ' + combination : ''} ${section}`
-          : `${trade} ${level} ${section}`),
-        systemType: systemType || 'tvet',
-        trade: trade || '',
-        combination: combination || '',
-        level,
-        section,
-        teacherId: teacherId || null,
-        academicYear,
-        status: 'active',
-      },
-      include: {
-        teacher: { select: { fullName: true, teacherId: true } },
-        students: { select: { id: true } },
-        subjects: { select: { id: true } },
-      },
-    });
-
-    return NextResponse.json({
-      ...newClass,
-      studentCount: newClass.students.length,
-      subjectCount: newClass.subjects.length,
-    });
-  } catch (error) {
-    console.error('Error creating class:', error);
-    return NextResponse.json({ error: 'Failed to create class' }, { status: 500 });
-  }
+export async function DELETE() {
+  return NextResponse.json(BODY, { status: 501 });
 }

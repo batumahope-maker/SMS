@@ -2,91 +2,158 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { ReportsClient } from '@/components/reports/ReportsClient';
-import { format } from 'date-fns';
-
-const thirtyDaysAgo = new Date();
-thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+import { formatMoney } from '@/lib/format';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ReportsPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') redirect('/login');
-  const schoolId = session.user.schoolId;
 
-  const [students, teachers, classes, subjects, allMarks, allAttendance, allPayments] = await Promise.all([
-    db.student.count({ where: { schoolId, status: 'active' } }),
-    db.teacher.count({ where: { schoolId, status: 'active' } }),
-    db.class.count({ where: { schoolId, status: 'active' } }),
-    db.subject.count({ where: { schoolId, status: 'active' } }),
-    db.mark.findMany({ where: { student: { schoolId } }, select: { marks: true, grade: true, studentId: true, student: { select: { fullName: true, studentId: true, class: { select: { name: true } } } } } }),
-    db.attendance.findMany({ where: { student: { schoolId }, date: { gte: thirtyDaysAgo } }, select: { date: true, status: true } }),
-    db.payment.findMany({ where: { schoolId }, select: { amount: true, paidAt: true } }),
-  ]);
+  const [usersByRole, studentAgg, counts, marksCount, attendanceCount] =
+    await Promise.all([
+      db.user.groupBy({ by: ['role'], _count: { _all: true } }),
+      db.student.aggregate({ _sum: { feePaid: true, feeBalance: true } }),
+      Promise.all([
+        db.student.count(),
+        db.teacher.count(),
+        db.announcement.count(),
+        db.schoolEvent.count(),
+        db.payment.count(),
+      ]),
+      db.mark.count(),
+      db.attendance.count(),
+    ]);
 
-  // Grade distribution
-  const gradeCounts: Record<string, number> = {};
-  allMarks.forEach(m => {
-    const g = m.grade || (m.marks >= 90 ? 'A+' : m.marks >= 80 ? 'A' : m.marks >= 70 ? 'B' : m.marks >= 60 ? 'C' : m.marks >= 50 ? 'D' : 'F');
-    gradeCounts[g] = (gradeCounts[g] || 0) + 1;
-  });
-  const gradeDistribution = Object.entries(gradeCounts).map(([grade, count]) => ({ grade, count })).sort((a, b) => b.count - a.count);
+  const [students, teachers, announcements, events, payments] = counts;
+  const roleCount = (role: string) =>
+    usersByRole.find((row) => row.role === role)?._count._all ?? 0;
 
-  // Attendance trend
-  const attByDate: Record<string, { present: number; total: number }> = {};
-  allAttendance.forEach(a => {
-    const d = format(new Date(a.date), 'MM/dd');
-    if (!attByDate[d]) attByDate[d] = { present: 0, total: 0 };
-    attByDate[d].total++;
-    if (a.status === 'present') attByDate[d].present++;
-  });
-  const attendanceData = Object.entries(attByDate).slice(-14).map(([date, v]) => ({
-    date, present: v.present, absent: v.total - v.present, rate: v.total > 0 ? Math.round((v.present / v.total) * 100) : 0,
-  }));
-
-  // Fee data by month
-  const feeByMonth: Record<string, number> = {};
-  allPayments.forEach(p => {
-    const m = format(new Date(p.paidAt), 'MMM');
-    feeByMonth[m] = (feeByMonth[m] || 0) + p.amount;
-  });
-  const feeData = Object.entries(feeByMonth).slice(-6).map(([month, collected]) => ({ month, collected, balance: 0 }));
-
-  // Top students
-  const studentMarks: Record<string, { marks: number[]; name: string; id: string; class: string }> = {};
-  allMarks.forEach(m => {
-    if (!studentMarks[m.studentId]) studentMarks[m.studentId] = { marks: [], name: m.student.fullName, id: m.student.studentId, class: m.student.class?.name || '—' };
-    studentMarks[m.studentId].marks.push(m.marks);
-  });
-  const topStudents = Object.values(studentMarks)
-    .map(s => ({ name: s.name, id: s.id, class: s.class, avg: Math.round(s.marks.reduce((a, b) => a + b, 0) / s.marks.length) }))
-    .sort((a, b) => b.avg - a.avg).slice(0, 10);
-
-  // Subject performance
-  const subjectMarks = await db.mark.groupBy({
-    by: ['subjectId'],
-    _avg: { marks: true },
-    _count: { marks: true },
-    where: { student: { schoolId } },
-  });
-  const subjectIds = subjectMarks.map(s => s.subjectId);
-  const subjectNames = await db.subject.findMany({ where: { id: { in: subjectIds } }, select: { id: true, name: true } });
-  const nameMap = Object.fromEntries(subjectNames.map(s => [s.id, s.name]));
-  const subjectPerformance = subjectMarks.map(s => ({
-    subject: (nameMap[s.subjectId] || 'Unknown').substring(0, 15),
-    avg: Math.round(s._avg.marks || 0),
-    entries: s._count.marks,
-  })).sort((a, b) => b.avg - a.avg).slice(0, 8);
+  const feeCollected = Number(studentAgg._sum.feePaid ?? 0);
+  const feeOutstanding = Number(studentAgg._sum.feeBalance ?? 0);
 
   return (
-    <ReportsClient
-      overview={{ students, teachers, classes, subjects }}
-      feeData={feeData}
-      attendanceData={attendanceData}
-      gradeDistribution={gradeDistribution}
-      topStudents={topStudents}
-      subjectPerformance={subjectPerformance}
-    />
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+        <p className="text-sm text-muted-foreground">
+          Read-only summary generated from the live database.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Enrolment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{students}</p>
+            <p className="text-xs text-muted-foreground">students · {teachers} teachers</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Fees collected
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{formatMoney(feeCollected)}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatMoney(feeOutstanding)} outstanding
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Content
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{announcements + events}</p>
+            <p className="text-xs text-muted-foreground">
+              {announcements} announcements · {events} events
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Database summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Area</TableHead>
+                <TableHead className="text-right">Records</TableHead>
+                <TableHead>Accounts</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell>Students</TableCell>
+                <TableCell className="text-right">{students}</TableCell>
+                <TableCell>{roleCount('student')} user logins</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Teachers</TableCell>
+                <TableCell className="text-right">{teachers}</TableCell>
+                <TableCell>{roleCount('teacher')} user logins</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Administrators</TableCell>
+                <TableCell className="text-right">{roleCount('admin')}</TableCell>
+                <TableCell>{roleCount('admin')} user logins</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Marks</TableCell>
+                <TableCell className="text-right">{marksCount}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {marksCount === 0 ? 'no marks recorded yet' : ''}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Attendance</TableCell>
+                <TableCell className="text-right">{attendanceCount}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {attendanceCount === 0 ? 'no attendance recorded yet' : ''}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Payments</TableCell>
+                <TableCell className="text-right">{payments}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {payments === 0 ? 'no payments recorded yet' : ''}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Announcements</TableCell>
+                <TableCell className="text-right">{announcements}</TableCell>
+                <TableCell />
+              </TableRow>
+              <TableRow>
+                <TableCell>Events</TableCell>
+                <TableCell className="text-right">{events}</TableCell>
+                <TableCell />
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

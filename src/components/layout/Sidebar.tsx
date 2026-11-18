@@ -13,7 +13,7 @@ import {
   LayoutDashboard, GraduationCap, UserCheck, Users, School, BookOpen,
   ClipboardCheck, FileText, DollarSign, CreditCard, BarChart3, Megaphone,
   Calendar, Library, Bus, Home, Settings, ChevronLeft, ChevronRight,
-  Shield, Sparkles, ArrowUpCircle, MessageSquare, QrCode, Award, Building2,
+  Shield, Sparkles, ArrowUpCircle, MessageSquare, QrCode,
 } from 'lucide-react';
 import { UserRole } from '@/types';
 
@@ -21,14 +21,12 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard, GraduationCap, UserCheck, Users, School, BookOpen,
   ClipboardCheck, FileText, DollarSign, CreditCard, BarChart3, Megaphone,
   Calendar, Library, Bus, Home, Settings, Shield, Sparkles,
-  ArrowUpCircle, MessageSquare, QrCode, Award, Building2,
+  ArrowUpCircle, MessageSquare, QrCode,
 };
 
 const navItems: Record<UserRole, Array<{ title: string; href: string; icon: string }>> = {
   admin: [
     { title: 'Dashboard', href: '/admin/dashboard', icon: 'LayoutDashboard' },
-    { title: 'REB section', href: '/admin/reb', icon: 'Award' },
-    { title: 'TVET section', href: '/admin/tvet', icon: 'Building2' },
     { title: 'Students', href: '/admin/students', icon: 'GraduationCap' },
     { title: 'Teachers', href: '/admin/teachers', icon: 'UserCheck' },
     { title: 'Classes', href: '/admin/classes', icon: 'School' },
@@ -85,8 +83,6 @@ const roleColors: Record<UserRole, string> = {
 // These keys match the actual translations.ts file.
 const translationKeys: Record<string, string> = {
   'Dashboard': 'nav.dashboard',
-  'REB section': 'nav.reb',
-  'TVET section': 'nav.tvet',
   'Students': 'nav.students',
   'Teachers': 'nav.teachers',
   'Classes': 'nav.classes',

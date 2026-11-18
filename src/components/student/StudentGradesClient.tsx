@@ -1,14 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Award, BookOpen, FileText, Download } from 'lucide-react';
+import { TrendingUp, Award, BookOpen, FileText } from 'lucide-react';
 
 interface Mark { id: string; marks: number; grade: string | null; term: string; examType: string; academicYear: string; subject: { name: string; code: string | null } }
-interface StudentGradesClientProps { marks: Mark[]; studentName: string; studentId: string }
+interface StudentGradesClientProps { marks: Mark[]; studentName: string }
 
 function getGrade(m: number) {
   if (m >= 90) return 'A+'; if (m >= 80) return 'A'; if (m >= 70) return 'B';
@@ -19,7 +18,7 @@ const gradeCls: Record<string, string> = {
   C: 'bg-yellow-100 text-yellow-800', D: 'bg-orange-100 text-orange-800', F: 'bg-red-100 text-red-800',
 };
 
-export function StudentGradesClient({ marks, studentName, studentId }: StudentGradesClientProps) {
+export function StudentGradesClient({ marks, studentName }: StudentGradesClientProps) {
   const [termFilter, setTermFilter] = useState('all');
   const terms = [...new Set(marks.map(m => m.term))].sort();
   const filtered = termFilter === 'all' ? marks : marks.filter(m => m.term === termFilter);
@@ -33,18 +32,12 @@ export function StudentGradesClient({ marks, studentName, studentId }: StudentGr
     subject: name.length > 12 ? name.substring(0, 12) + '…' : name,
     average: Math.round(ms.reduce((a, b) => a + b, 0) / ms.length),
   })).sort((a, b) => b.average - a.average);
-  const reportCardTerm = termFilter !== 'all' ? termFilter : (terms[terms.length - 1] || 'Term 1');
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">My grades</h1>
-          <p className="text-muted-foreground text-sm mt-1">Academic performance for {studentName}</p>
-        </div>
-        <a href={`/api/report-card?studentId=${studentId}&term=${encodeURIComponent(reportCardTerm)}`} target="_blank" rel="noreferrer">
-          <Button variant="outline" size="sm"><FileText className="w-4 h-4 mr-2" />Download report card</Button>
-        </a>
+      <div>
+        <h1 className="text-2xl font-bold">My grades</h1>
+        <p className="text-muted-foreground text-sm mt-1">Academic performance for {studentName}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -126,25 +119,6 @@ export function StudentGradesClient({ marks, studentName, studentId }: StudentGr
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200">
-        <CardContent className="pt-5 pb-5">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <p className="font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-2"><FileText className="w-5 h-5" />Official report card</p>
-              <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-0.5">Download your printable report card — opens in a new tab, then print to PDF</p>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {(terms.length > 0 ? terms : ['Term 1', 'Term 2', 'Term 3']).map(t => (
-                <a key={t} href={`/api/report-card?studentId=${studentId}&term=${encodeURIComponent(t)}`} target="_blank" rel="noreferrer">
-                  <Button size="sm" variant="outline" className="border-emerald-300 hover:bg-emerald-100">
-                    <Download className="w-3 h-3 mr-1.5" />{t}
-                  </Button>
-                </a>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

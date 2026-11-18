@@ -1,89 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-import bcrypt from 'bcryptjs';
 
-// GET - Fetch all teachers
+/**
+ * Read-only teacher records.
+ * Live `teachers`: id, user_id, teacher_id, subject, department, hire_date.
+ * The teacher name lives on users.full_name.
+ */
 export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
+  try {
     const teachers = await db.teacher.findMany({
-      where: { schoolId: session.user.schoolId },
+      orderBy: { id: 'asc' },
       include: {
-        user: { select: { email: true, phone: true } },
-        classes: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            username: true,
+            email: true,
+            phone: true,
+            status: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json(teachers);
+    return NextResponse.json(
+      teachers.map((teacher) => ({
+        id: teacher.id,
+        teacherId: teacher.teacherId,
+        userId: teacher.userId,
+        fullName: teacher.user?.fullName ?? teacher.user?.username ?? '',
+        username: teacher.user?.username ?? '',
+        email: teacher.user?.email ?? '',
+        phone: teacher.user?.phone ?? null,
+        status: teacher.user?.status ?? null,
+        subject: teacher.subject,
+        department: teacher.department,
+        hireDate: teacher.hireDate,
+      }))
+    );
   } catch (error) {
     console.error('Error fetching teachers:', error);
     return NextResponse.json({ error: 'Failed to fetch teachers' }, { status: 500 });
   }
 }
 
-// POST - Create a new teacher
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { teacherId, fullName, gender, phone, subjects, department, qualification, salary, email } = body;
-
-    // Check if teacher ID already exists
-    const existingTeacher = await db.teacher.findUnique({
-      where: { teacherId },
-    });
-
-    if (existingTeacher) {
-      return NextResponse.json({ error: 'Teacher ID already exists' }, { status: 400 });
-    }
-
-    // Create user account
-    const passwordHash = await bcrypt.hash('teacher123', 10);
-    const user = await db.user.create({
-      data: {
-        username: teacherId.toLowerCase(),
-        email: email || `${teacherId.toLowerCase()}@essjt.edu.rw`,
-        password: passwordHash,
-        role: 'teacher',
-        schoolId: session.user.schoolId,
-        status: 'active',
-      },
-    });
-
-    // Create teacher profile
-    const teacher = await db.teacher.create({
-      data: {
-        userId: user.id,
-        schoolId: session.user.schoolId,
-        teacherId,
-        fullName,
-        gender,
-        phone,
-        subjects,
-        department,
-        qualification,
-        salary: salary || 0,
-        status: 'active',
-      },
-      include: {
-        user: { select: { email: true } },
-      },
-    });
-
-    return NextResponse.json(teacher);
-  } catch (error) {
-    console.error('Error creating teacher:', error);
-    return NextResponse.json({ error: 'Failed to create teacher' }, { status: 500 });
-  }
+export async function POST() {
+  return NextResponse.json(
+    {
+      error: 'Write disabled',
+      reason: 'This build is read-only against the live essjt_school_system database.',
+    },
+    { status: 403 }
+  );
 }

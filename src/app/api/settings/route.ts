@@ -1,44 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { NextResponse } from 'next/server';
 
+/**
+ * The live essjt_school_system database has no `settings` or `schools` table,
+ * so there is nothing to read or update. Returning null keeps the public
+ * landing page working without inventing a settings store.
+ */
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const school = await db.school.findUnique({
-    where: { id: session.user.schoolId },
-    include: { license: true, settings: true },
+  return NextResponse.json(null, {
+    headers: { 'Cache-Control': 'no-store' },
   });
-  return NextResponse.json(school);
 }
 
-export async function PATCH(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const body = await request.json();
-  const { name, logo, address, phone, email, website, motto, primaryColor, secondaryColor, language, timezone, academicYear } = body;
-
-  const school = await db.school.update({
-    where: { id: session.user.schoolId },
-    data: {
-      name: name || undefined,
-      logo: logo !== undefined ? (logo || null) : undefined,
-      address: address || null,
-      phone: phone || null,
-      email: email || null,
-      website: website || null,
-      motto: motto || null,
-      primaryColor: primaryColor || undefined,
-      secondaryColor: secondaryColor || undefined,
-      language: language || undefined,
-      timezone: timezone || undefined,
-      academicYear: academicYear || undefined,
+export async function PUT() {
+  return NextResponse.json(
+    {
+      error: 'Not available',
+      reason:
+        'The live essjt_school_system schema has no settings or schools table.',
     },
-  });
-  return NextResponse.json(school);
+    { status: 501 }
+  );
+}
+
+export async function POST() {
+  return NextResponse.json(
+    {
+      error: 'Not available',
+      reason:
+        'The live essjt_school_system schema has no settings or schools table.',
+    },
+    { status: 501 }
+  );
 }

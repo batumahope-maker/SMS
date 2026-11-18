@@ -1,26 +1,13 @@
-import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { AIAnalysisClient } from '@/components/ai/AIAnalysisClient';
+import { ModuleUnavailable } from '@/components/ModuleUnavailable';
+
 export const dynamic = 'force-dynamic';
 
-export default async function AIAnalysisPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || !['admin', 'teacher'].includes(session.user.role)) redirect('/login');
-
-  const [students, classes] = await Promise.all([
-    db.student.findMany({
-      where: { schoolId: session.user.schoolId, status: 'active' },
-      select: { id: true, fullName: true, studentId: true },
-      orderBy: { fullName: 'asc' },
-    }),
-    db.class.findMany({
-      where: { schoolId: session.user.schoolId, status: 'active' },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    }),
-  ]);
-
-  return <AIAnalysisClient students={students} classes={classes} />;
+export default function Page() {
+  return (
+    <ModuleUnavailable
+      title="AI analysis"
+      detail="AI analysis depends on tables that are not present in the live schema."
+      homeHref="/admin/dashboard"
+    />
+  );
 }

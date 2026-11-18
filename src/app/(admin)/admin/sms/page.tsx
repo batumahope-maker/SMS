@@ -1,42 +1,13 @@
-import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { SMSClient } from '@/components/sms/SMSClient';
+import { ModuleUnavailable } from '@/components/ModuleUnavailable';
+
 export const dynamic = 'force-dynamic';
 
-export default async function SMSPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') redirect('/login');
-
-  const [classes, absentToday] = await Promise.all([
-    db.class.findMany({
-      where: { schoolId: session.user.schoolId, status: 'active' },
-      select: { id: true, name: true, _count: { select: { students: true } } },
-      orderBy: { name: 'asc' },
-    }),
-    db.attendance.count({
-      where: {
-        student: { schoolId: session.user.schoolId },
-        status: 'absent',
-        date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-      },
-    }),
-  ]);
-
-  const studentsWithPhone = await db.student.count({
-    where: { schoolId: session.user.schoolId, status: 'active', guardianPhone: { not: null } },
-  });
-
-  const feeDefaulters = await db.student.count({
-    where: { schoolId: session.user.schoolId, status: 'active', feeBalance: { gt: 0 } },
-  });
-
+export default function Page() {
   return (
-    <SMSClient
-      classes={classes}
-      stats={{ absentToday, studentsWithPhone, feeDefaulters }}
-      configured={!!(process.env.AT_USERNAME && process.env.AT_API_KEY)}
+    <ModuleUnavailable
+      title="SMS"
+      detail="SMS dispatch is disabled in this build, and no personal data is sent to external services."
+      homeHref="/admin/dashboard"
     />
   );
 }

@@ -2,51 +2,93 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { MarksClient } from '@/components/marks/MarksClient';
+import { gradeFor } from '@/lib/format';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export const dynamic = 'force-dynamic';
 
-export default async function MarksPage() {
+export default async function AdminMarksPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') redirect('/login');
 
-  const [marks, students, subjects, agg] = await Promise.all([
-    db.mark.findMany({
-      where: { student: { schoolId: session.user.schoolId } },
-      select: {
-        id: true, marks: true, grade: true, term: true, examType: true, academicYear: true,
-        student: { select: { fullName: true, studentId: true } },
-        subject: { select: { name: true, code: true } },
-        teacher: { select: { fullName: true } },
+  const marks = await db.mark.findMany({
+    orderBy: [{ year: 'desc' }, { createdAt: 'desc' }],
+    take: 200,
+    include: {
+      student: {
+        select: {
+          fullName: true,
+          username: true,
+          student: { select: { studentId: true } },
+        },
       },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    }),
-    db.student.findMany({
-      where: { schoolId: session.user.schoolId, status: 'active' },
-      select: { id: true, fullName: true, studentId: true },
-      orderBy: { fullName: 'asc' },
-    }),
-    db.subject.findMany({
-      where: { schoolId: session.user.schoolId, status: 'active' },
-      select: { id: true, name: true, code: true },
-      orderBy: { name: 'asc' },
-    }),
-    db.mark.aggregate({
-      where: { student: { schoolId: session.user.schoolId } },
-      _avg: { marks: true },
-      _max: { marks: true },
-      _min: { marks: true },
-      _count: { marks: true },
-    }),
-  ]);
+    },
+  });
 
-  const stats = {
-    total: agg._count.marks,
-    avg: Math.round(agg._avg.marks || 0),
-    highest: Math.round(agg._max.marks || 0),
-    lowest: Math.round(agg._min.marks || 0),
-  };
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Marks</h1>
+        <p className="text-sm text-muted-foreground">
+          Read-only view of the live <code>marks</code> table. Grade is derived from
+          marks / max_marks; the database stores no grade column.
+        </p>
+      </div>
 
-  return <MarksClient marks={marks} students={students} subjects={subjects} stats={stats} />;
+      <Card>
+        <CardHeader>
+          <CardTitle>Recorded results</CardTitle>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Student</TableHead>
+                <TableHead>Subject</TableHead>
+                <TableHead>Term</TableHead>
+                <TableHead>Year</TableHead>
+                <TableHead className="text-right">Score</TableHead>
+                <TableHead>Grade</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {marks.map((mark) => {
+                const score = Number(mark.marks ?? 0);
+                const max = Number(mark.maxMarks ?? 100);
+                return (
+                  <TableRow key={mark.id}>
+                    <TableCell>
+                      {mark.student?.fullName ?? mark.student?.username ?? '—'}
+                    </TableCell>
+                    <TableCell>{mark.subject ?? '—'}</TableCell>
+                    <TableCell>{mark.term ?? '—'}</TableCell>
+                    <TableCell>{mark.year ?? '—'}</TableCell>
+                    <TableCell className="text-right">
+                      {score} / {max}
+                    </TableCell>
+                    <TableCell>{gradeFor(score, max)}</TableCell>
+                  </TableRow>
+                );
+              })}
+              {marks.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    No marks have been recorded yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

@@ -1,23 +1,13 @@
-import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { StudentHomeworkClient } from '@/components/student/StudentHomeworkClient';
+import { ModuleUnavailable } from '@/components/ModuleUnavailable';
+
 export const dynamic = 'force-dynamic';
 
-export default async function StudentHomeworkPage() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'student') redirect('/login');
-  const student = await db.student.findFirst({ where: { userId: session.user.id } });
-  if (!student) redirect('/login');
-  const homework = await db.homework.findMany({
-    where: { classId: student.classId || undefined },
-    include: {
-      subject: { select: { name: true } },
-      teacher: { select: { fullName: true } },
-      submissions: { where: { studentId: student.id } },
-    },
-    orderBy: { dueDate: 'asc' },
-  });
-  return <StudentHomeworkClient homework={homework} studentId={student.id} />;
+export default function Page() {
+  return (
+    <ModuleUnavailable
+      title="Homework"
+      detail="The live schema has no homework or homework_submissions tables."
+      homeHref="/student/dashboard"
+    />
+  );
 }
