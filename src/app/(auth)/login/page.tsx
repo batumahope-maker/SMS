@@ -61,22 +61,24 @@ export default function LoginPage() {
       const session = await response.json();
 
       if (session?.user?.role) {
-        switch (session.user.role) {
-          case 'admin':
-            router.push('/admin/dashboard');
-            break;
-          case 'teacher':
-            router.push('/teacher/dashboard');
-            break;
-          case 'student':
-            router.push('/student/dashboard');
-            break;
-          case 'parent':
-            router.push('/parent/dashboard');
-            break;
-          default:
-            router.push('/');
-        }
+        const home =
+          session.user.role === 'admin'
+            ? '/admin/dashboard'
+            : session.user.role === 'teacher'
+              ? '/teacher/dashboard'
+              : session.user.role === 'student'
+                ? '/student/dashboard'
+                : '/';
+
+        // Honour a callbackUrl set by the middleware, but only for same-site paths.
+        const requested = new URLSearchParams(window.location.search).get('callbackUrl');
+        const safeRequested =
+          requested && requested.startsWith('/') && !requested.startsWith('//')
+            ? requested
+            : null;
+
+        router.push(safeRequested ?? home);
+        router.refresh();
       } else {
         setError('Unable to retrieve your account information.');
         setLoading(false);
@@ -142,7 +144,7 @@ export default function LoginPage() {
                   <Input
                     id="username"
                     type="text"
-                    placeholder="Enter your username"
+                    placeholder="Enter your username or email"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="pl-10"
@@ -223,18 +225,20 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
-              <p className="text-sm font-medium mb-2">
-                Demo Credentials:
+            {/* Public self-registration entry points. */}
+            <div className="mt-4 pt-4 border-t text-center space-y-1">
+              <p className="text-sm">
+                New student?{' '}
+                <Link href="/register/student" className="text-primary hover:underline">
+                  Register here
+                </Link>
               </p>
-
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <p><span className="font-medium">Admin:</span> admin / admin123</p>
-                <p><span className="font-medium">Teacher:</span> teacher / teacher123</p>
-                <p><span className="font-medium">Student:</span> student / student123</p>
-                <p><span className="font-medium">Parent:</span> parent / parent123</p>
-              </div>
+              <p className="text-sm">
+                New teacher?{' '}
+                <Link href="/register/teacher" className="text-primary hover:underline">
+                  Apply here
+                </Link>
+              </p>
             </div>
 
           </CardContent>
