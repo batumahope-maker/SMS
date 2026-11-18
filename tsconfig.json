@@ -39,6 +39,7 @@
   "exclude": [
     "examples",
     "node_modules",
-    "prisma/seed.ts"
+    "prisma/seed.ts",
+    "**/route-backup.ts.txt.ts"
   ]
 }

@@ -45,6 +45,18 @@
 *.p12
 id_rsa*
 
+# ---------- 3b. Staging secrets (never commit; added 2026-11-16) ----------
+# The whole scripts/staging/ directory is currently untracked. These explicit
+# entries are defense-in-depth against a future "git add .":
+#   staging.env       holds staging account passwords inside URL strings.
+#   setup-report.json SHOW GRANTS output includes IDENTIFIED BY PASSWORD hash
+#                     fragments, so it is treated as secret-bearing.
+/scripts/staging/staging.env
+/scripts/staging/setup-report.json
+# transport-library-setup-report.json embeds SHOW GRANTS output containing
+# `IDENTIFIED BY PASSWORD '*<hash>'` fragments. Secret-bearing; keep on disk only.
+/scripts/staging/transport-library-setup-report.json
+
 # ---------- 4. Credential-shaped documents under review ----------
 # TEMPORARY. Delete a line once that file is scrubbed and
 # confirmed safe to publish.

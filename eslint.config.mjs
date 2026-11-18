@@ -44,7 +44,10 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "no-useless-escape": "off",
   },
 }, {
-  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills"]
+  // prisma/seed.js and seed.ts are legacy seed scripts for the archived
+  // schemas. They must never run against the live database, so they are kept
+  // untouched as reference material and linting them adds nothing.
+  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "prisma/seed.js", "prisma/seed.ts"]
 }];
 
 export default eslintConfig;
