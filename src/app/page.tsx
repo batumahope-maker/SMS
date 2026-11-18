@@ -25,14 +25,26 @@ import {
   School,
   ClipboardCheck,
   Sparkles,
-  Award,
-  Building2,
 } from 'lucide-react';
 
 import { LanguageSwitcher } from '@/components/language/LanguageSwitcher';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
-const portals = [
+type PortalCard = {
+  key: string;
+  title: string;
+  description: string;
+  icon: typeof Shield;
+  href: string;
+  color: string;
+  bg: string;
+  border: string;
+  features: string[];
+  badge: string;
+  comingSoon?: boolean;
+};
+
+const portals: PortalCard[] = [
   {
     key: 'admin',
     title: 'Admin Portal',
@@ -87,45 +99,16 @@ const portals = [
   {
     key: 'parent',
     title: 'Parent Portal',
-    description: "Monitor your child's progress, attendance, fees and communicate with staff",
+    description:
+      'Parent accounts are not issued yet. Contact the school office about your child’s progress.',
     icon: Users,
     href: '/login',
     color: 'from-orange-500 to-red-500',
     bg: 'bg-orange-50 dark:bg-orange-950/30',
     border: 'border-orange-200 dark:border-orange-800',
-    features: [
-      "Child's grades & progress",
-      'Attendance monitoring',
-      'Fee balance & payments',
-      'Message teachers/admin',
-    ],
+    features: [],
     badge: 'Parents',
-  },
-];
-
-const systems = [
-  {
-    id: 'reb',
-    icon: Award,
-    label: 'REB Section',
-    subtitle: 'Ordinary & Advanced Level',
-    color: 'from-blue-600 to-indigo-700',
-    levels: [
-      { group: "O'Level", items: ['S1', 'S2', 'S3'] },
-      { group: "A'Level", items: ['S4', 'S5', 'S6'] },
-    ],
-    desc: 'Full curriculum support for ordinary and advanced level, including combination tracking, national exams (PLE, O-Level, A-Level), and REB-compliant report cards.',
-  },
-  {
-    id: 'tvet',
-    icon: Building2,
-    label: 'TVET Section',
-    subtitle: 'Technical & Vocational Education',
-    color: 'from-emerald-600 to-teal-700',
-    levels: [
-      { group: 'Levels', items: ['L3', 'L4', 'L5'] },
-    ],
-    desc: 'Designed for TVET schools with trade-based classes, competency tracking, practical assessment records, and WDA-compliant certification support.',
+    comingSoon: true,
   },
 ];
 
@@ -241,14 +224,20 @@ export default function HomePage() {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {portals.map((p) => (
-            <Link key={p.key} href={p.href} className="group block">
+          {portals.map((p) => {
+            const card = (
               <Card
-                className={`h-full border-2 ${p.border} ${p.bg} transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5`}
+                className={`h-full border-2 ${p.border} ${p.bg} ${
+                  p.comingSoon
+                    ? 'opacity-95'
+                    : 'transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
+                }`}
               >
                 <CardHeader className="pb-3">
                   <div
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-3 shadow-md group-hover:scale-105 transition-transform`}
+                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-3 shadow-md ${
+                      p.comingSoon ? '' : 'group-hover:scale-105 transition-transform'
+                    }`}
                   >
                     <p.icon className="w-6 h-6 text-white" />
                   </div>
@@ -258,7 +247,11 @@ export default function HomePage() {
                       {t(`portal.${p.key}`)}
                     </CardTitle>
 
-                    <ChevronRight className="w-4 h-4 text-muted-foreground mt-0.5 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                    {p.comingSoon ? (
+                      <Lock className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground mt-0.5 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                    )}
                   </div>
 
                   <CardDescription className="text-xs leading-relaxed">
@@ -281,87 +274,23 @@ export default function HomePage() {
 
                   <div className="mt-4">
                     <Badge variant="outline" className="text-xs">
-                      {p.badge}
+                      {p.comingSoon ? t('landing.coming_soon') : p.badge}
                     </Badge>
                   </div>
                 </CardContent>
               </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
+            );
 
-      {/* REB and TVET Systems */}
-      <section className="bg-muted/40 border-y">
-        <div className="container mx-auto px-4 py-14">
-          <h2 className="text-2xl font-bold text-center mb-2">
-            {t('landing.systems_title')}
-          </h2>
-
-          <p className="text-muted-foreground text-center text-sm mb-10">
-            {t('landing.systems_description')}
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {systems.map((sys) => (
-              <Link key={sys.id} href="/login" className="block group">
-                <Card className="h-full border-2 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${sys.color} flex items-center justify-center shadow-md group-hover:scale-105 transition-transform`}
-                      >
-                        <sys.icon className="w-7 h-7 text-white" />
-                      </div>
-
-                      <div>
-                        <CardTitle className="text-lg">
-                          {sys.id === 'reb'
-                            ? t('nav.reb')
-                            : t('nav.tvet')}
-                        </CardTitle>
-                        <CardDescription>
-                          {sys.subtitle}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    <div className="flex flex-wrap gap-3">
-                      {sys.levels.map((group) => (
-                        <div key={group.group}>
-                          <p className="text-xs font-semibold text-muted-foreground mb-1.5">
-                            {group.group}
-                          </p>
-
-                          <div className="flex gap-1.5 flex-wrap">
-                            {group.items.map((lvl) => (
-                              <span
-                                key={lvl}
-                                className="px-2.5 py-1 bg-background border rounded-full text-xs font-medium shadow-sm"
-                              >
-                                {lvl}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {sys.desc}
-                    </p>
-
-                    <p className="text-xs font-medium text-emerald-600 group-hover:underline">
-                      {t('landing.login_as_admin')} → Admin &gt;{' '}
-                      {sys.id === 'reb' ? t('nav.reb') : t('nav.tvet')}
-                    </p>
-                  </CardContent>
-                </Card>
+            return p.comingSoon ? (
+              <div key={p.key} className="block cursor-default">
+                {card}
+              </div>
+            ) : (
+              <Link key={p.key} href={p.href} className="group block">
+                {card}
               </Link>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </section>
 

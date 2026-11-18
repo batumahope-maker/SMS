@@ -193,7 +193,7 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
                   : formatCurrency(stats.totalFeeBalance)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Your current database does not contain a fee-balance field.
+                Outstanding balance recorded across all student records.
               </p>
             </div>
           </CardContent>

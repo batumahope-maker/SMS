@@ -19,7 +19,6 @@ import {
   Bell,
   Settings,
   LogOut,
-  User,
   Moon,
   Sun,
   Menu,
@@ -120,6 +119,21 @@ export function Header({
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Admin: a clearly visible logout button in the shared header bar.
+            Other roles keep the avatar-menu logout only, so their portals are
+            unaffected. */}
+        {session?.user?.role === 'admin' && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
+        )}
+
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -160,16 +174,6 @@ export function Header({
             </DropdownMenuLabel>
 
             <DropdownMenuSeparator />
-
-            <DropdownMenuItem asChild>
-              <Link
-                href={`/${session?.user?.role}/profile`}
-                className="cursor-pointer"
-              >
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </Link>
-            </DropdownMenuItem>
 
             {session?.user?.role === 'admin' && (
               <DropdownMenuItem asChild>
