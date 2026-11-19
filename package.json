@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "setup": "prisma generate --schema=prisma/schema.live-mirror.prisma",
+    "postinstall": "prisma generate --schema=prisma/schema.live-mirror.prisma",
     "dev": "next dev -p 3000",
     "dev:log": "next dev -p 3000",
-    "build": "next build --webpack && node scripts/prepare-standalone.mjs",
+    "build": "prisma generate --schema=prisma/schema.live-mirror.prisma && next build --webpack && node scripts/prepare-standalone.mjs",
     "start": "node scripts/start-standalone.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -28,6 +29,9 @@
     "db:generate:mysql": "prisma generate --schema=prisma/schema.mysql.prisma",
     "db:pull:mysql": "node scripts/require-db-authorization.mjs db pull --schema=prisma/schema.mysql.prisma",
     "db:studio:mysql": "node scripts/require-db-authorization.mjs studio --schema=prisma/schema.mysql.prisma"
+  },
+  "prisma": {
+    "schema": "prisma/schema.live-mirror.prisma"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
