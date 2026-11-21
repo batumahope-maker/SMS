@@ -19,8 +19,16 @@ export const DEMO_ACCOUNTS = [
 
 export function isDemoMode(): boolean {
   const value = process.env[DEMO_MODE_ENV_KEY];
-  if (!value) return false;
-  return value === '1' || value.trim().toLowerCase() === 'true';
+
+  if (value !== undefined && (value === '0' || value.trim().toLowerCase() === 'false')) {
+    return false;
+  }
+  if (value === '1' || (value ?? '').trim().toLowerCase() === 'true') return true;
+
+  // Preview deployments get synthetic data by default so the teacher/admin
+  // accounts work without asking the operator to change Vercel settings.
+  // Local development and Production remain non-demo unless explicitly enabled.
+  return process.env.VERCEL_ENV === 'preview';
 }
 
 /** Build-time-safe constant for client components. */

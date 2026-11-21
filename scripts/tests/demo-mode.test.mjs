@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const ts = require('typescript');
+const Module = require('module');
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const outDir = path.join(root, '.next', 'demo-mode-test');
@@ -19,6 +20,17 @@ let failed = 0;
 function test(name, fn) {
   try {
     fn();
+    passed += 1;
+    console.log(`PASS ${name}`);
+  } catch (error) {
+    failed += 1;
+    console.error(`FAIL ${name}\n     ${error?.message ?? error}`);
+  }
+}
+
+async function testAsync(name, fn) {
+  try {
+    await fn();
     passed += 1;
     console.log(`PASS ${name}`);
   } catch (error) {
@@ -60,11 +72,27 @@ transpile('src/lib/read-only-guard.ts');
 transpile('src/lib/db.ts');
 transpile('src/lib/password.ts');
 transpile('src/lib/db-writer.ts');
+transpile('src/lib/user-flags.ts');
+transpile('src/lib/auth.ts');
+
+const resolveOriginal = Module._resolveFilename;
+Module._resolveFilename = function (request, ...args) {
+  const map = {
+    '@/lib/db': 'db.js',
+    '@/lib/demo-mode': 'demo-mode.js',
+    '@/lib/password': 'password.js',
+    '@/lib/user-flags': 'user-flags.js',
+  };
+  const file = map[request];
+  if (file) return path.join(outDir, file);
+  return resolveOriginal.call(this, request, ...args);
+};
 
 const { demoDb, DemoReadOnlyError } = require(path.join(outDir, 'demo-db.js'));
 const { db } = require(path.join(outDir, 'db.js'));
 const { isDemoMode } = require(path.join(outDir, 'demo-mode.js'));
 const { isWriterConfigured, writeDisabledMessage } = require(path.join(outDir, 'db-writer.js'));
+const { authOptions } = require(path.join(outDir, 'auth.js'));
 
 (async () => {
   try {
@@ -107,6 +135,34 @@ const { isWriterConfigured, writeDisabledMessage } = require(path.join(outDir, '
     test('demo writer guard is disabled', () => {
       assert.equal(isWriterConfigured(), false);
       assert.match(writeDisabledMessage(), /demo mode/i);
+    });
+
+    await testAsync('demo authorize accepts valid admin credentials', async () => {
+      const provider = authOptions.providers[0];
+      const authorize = provider.options.authorize;
+      assert.equal(typeof authorize, 'function');
+      const user = await authorize({ username: 'demo.admin', password: 'Demo1234!' });
+      assert.equal(user?.role, 'admin');
+      assert.equal(user?.id, '1001');
+      assert.equal(user?.username, 'demo.admin');
+    });
+
+    await testAsync('demo authorize rejects invalid admin password', async () => {
+      const provider = authOptions.providers[0];
+      const user = await provider.options.authorize({
+        username: 'demo.admin',
+        password: 'NotTheDemoPassword',
+      });
+      assert.equal(user, null);
+    });
+
+    await testAsync('demo authorize rejects unknown username', async () => {
+      const provider = authOptions.providers[0];
+      const user = await provider.options.authorize({
+        username: 'no.such.user',
+        password: 'Demo1234!',
+      });
+      assert.equal(user, null);
     });
   } finally {
     rmSync(outDir, { recursive: true, force: true });
