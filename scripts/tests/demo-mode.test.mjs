@@ -93,6 +93,7 @@ const { db } = require(path.join(outDir, 'db.js'));
 const { isDemoMode } = require(path.join(outDir, 'demo-mode.js'));
 const { isWriterConfigured, writeDisabledMessage } = require(path.join(outDir, 'db-writer.js'));
 const { authOptions } = require(path.join(outDir, 'auth.js'));
+const { demoData, parentDemoChild, parentDemoOverview } = require(path.join(outDir, 'demo-data.js'));
 
 (async () => {
   try {
@@ -147,7 +148,151 @@ const { authOptions } = require(path.join(outDir, 'auth.js'));
       assert.equal(user?.username, 'demo.admin');
     });
 
-    await testAsync('demo authorize rejects invalid admin password', async () => {
+    await testAsync('demo authorize accepts valid student credentials', async () => {
+      const user = await authOptions.providers[0].options.authorize({
+        username: 'demo.student',
+        password: 'Demo1234!',
+      });
+      assert.equal(user?.role, 'student');
+      assert.equal(user?.id, '3001');
+      assert.equal(user?.username, 'demo.student');
+    });
+
+    await testAsync('demo authorize accepts valid teacher credentials', async () => {
+      const user = await authOptions.providers[0].options.authorize({
+        username: 'demo.teacher',
+        password: 'Demo1234!',
+      });
+      assert.equal(user?.role, 'teacher');
+      assert.equal(user?.id, '2001');
+      assert.equal(user?.username, 'demo.teacher');
+    });
+
+    await testAsync('demo authorize accepts valid parent credentials', async () => {
+      const user = await authOptions.providers[0].options.authorize({
+        username: 'demo.parent',
+        password: 'Demo1234!',
+      });
+      assert.equal(user?.role, 'parent');
+      assert.equal(user?.id, '4001');
+      assert.equal(user?.username, 'demo.parent');
+    });
+
+    await testAsync('demo authorize rejects invalid student password', async () => {
+      const user = await authOptions.providers[0].options.authorize({
+        username: 'demo.student',
+        password: 'NotTheDemoPassword',
+      });
+      assert.equal(user, null);
+    });
+
+    await testAsync('demo authorize rejects invalid teacher password', async () => {
+      const user = await authOptions.providers[0].options.authorize({
+        username: 'demo.teacher',
+        password: 'NotTheDemoPassword',
+      });
+      assert.equal(user, null);
+    });
+
+    await testAsync('demo authorize rejects invalid parent password', async () => {
+      const user = await authOptions.providers[0].options.authorize({
+        username: 'demo.parent',
+        password: 'NotTheDemoPassword',
+      });
+      assert.equal(user, null);
+    });
+
+    await testAsync('Vercel preview defaults to demo mode when env flag is unset', () => {
+      const previous = process.env.NEXT_PUBLIC_DEMO_MODE;
+      delete process.env.NEXT_PUBLIC_DEMO_MODE;
+      process.env.VERCEL_ENV = 'preview';
+      try {
+        assert.equal(isDemoMode(), true);
+      } finally {
+        process.env.NEXT_PUBLIC_DEMO_MODE = previous ?? '1';
+        delete process.env.VERCEL_ENV;
+      }
+    });
+
+    await testAsync('demo rejects unknown student username', async () => {
+      const user = await authOptions.providers[0].options.authorize({
+        username: 'no.such.student',
+        password: 'Demo1234!',
+      });
+      assert.equal(user, null);
+    });
+
+    await testAsync('demo rejects unknown teacher username', async () => {
+      const user = await authOptions.providers[0].options.authorize({
+        username: 'no.such.teacher',
+        password: 'Demo1234!',
+      });
+      assert.equal(user, null);
+    });
+
+    await testAsync('demo rejects unknown parent username', async () => {
+      const user = await authOptions.providers[0].options.authorize({
+        username: 'no.such.parent',
+        password: 'Demo1234!',
+      });
+      assert.equal(user, null);
+    });
+
+    await testAsync('demo data links parent and synthetic student', () => {
+      assert.equal(parentDemoChild.parentId, 4001);
+      assert.equal(parentDemoChild.studentUserId, 3001);
+      assert.equal(parentDemoChild.studentId, 'DEMO-S-1001');
+      assert.equal(parentDemoOverview.studentId, 'DEMO-S-1001');
+      assert.equal(parentDemoChild.parentName, 'Demo Parent');
+      assert.equal(parentDemoChild.studentUserId, demoData.student[0].userId);
+      assert.equal(parentDemoChild.parentId, demoData.user.find((u) => u.role === 'parent')?.id);
+    });
+
+    await testAsync('student dashboard demo queries return synthetic data', async () => {
+      const student = await db.student.findFirst({
+        where: { userId: 3001 },
+        include: { user: { select: { fullName: true, username: true } } },
+      });
+      assert.equal(student?.user?.fullName, 'Demo Student');
+      assert.equal(student?.studentId, 'DEMO-S-1001');
+      assert.equal(Number(student?.feeBalance ?? 0), 25000);
+
+      const schedules = await db.schoolSchedule.findMany({
+        where: { trade: 'ICT', level: 'Level 3', section: 'A', isActive: true },
+        orderBy: { startTime: 'asc' },
+      });
+      assert.ok(schedules.length > 0);
+      assert.ok(schedules.some((row) => row.subject === 'Introduction to ICT'));
+
+      const marks = await db.mark.findMany({ where: { studentId: 3001 }, orderBy: { createdAt: 'desc' }, take: 10 });
+      assert.ok(marks.length >= 3);
+
+      const attendance = await db.attendance.findMany({ where: { studentId: 3001 }, take: 30 });
+      assert.ok(attendance.length >= 3);
+    });
+
+    await testAsync('teacher dashboard demo queries return synthetic data', async () => {
+      const teacher = await db.teacher.findFirst({
+        where: { userId: 2001 },
+        include: { user: { select: { fullName: true, username: true } } },
+      });
+      assert.equal(teacher?.user?.fullName, 'Demo Teacher');
+      assert.equal(teacher?.subject, 'Introduction to ICT');
+
+      const schedule = await db.schoolSchedule.findMany({ where: { teacherId: 2001, isActive: true } });
+      assert.ok(schedule.length > 0);
+
+      const scoped = await db.student.findMany({
+        where: { OR: [{ trade: 'ICT', level: 'Level 3', section: 'A' }] },
+        select: { id: true, studentId: true },
+      });
+      assert.ok(scoped.some((row) => row.studentId === 'DEMO-S-1001'));
+
+      const marks = await db.mark.findMany({ where: { subject: 'Introduction to ICT' }, take: 10 });
+      assert.ok(marks.length > 0);
+    });
+
+    await testAsync('demo rejects invalid admin password', async () => {
       const provider = authOptions.providers[0];
       const user = await provider.options.authorize({
         username: 'demo.admin',

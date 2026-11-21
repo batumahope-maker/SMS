@@ -84,6 +84,8 @@ export default function ParentDashboardPage() {
           <p><span className="font-medium">Full name:</span> {parentDemoChild.fullName}</p>
           <p><span className="font-medium">Student number:</span> {parentDemoChild.studentId}</p>
           <p><span className="font-medium">Class:</span> {parentDemoChild.className}</p>
+            <p><span className="font-medium">Parent user ID:</span> {String(parentDemoChild.parentId)}</p>
+            <p><span className="font-medium">Student user ID:</span> {String(parentDemoChild.studentUserId)}</p>
           <p><span className="font-medium">Guardian relation:</span> {parentDemoChild.guardianRelation}</p>
           <p><span className="font-medium">Enrollment date:</span> {parentDemoChild.enrollmentDate}</p>
         </CardContent>

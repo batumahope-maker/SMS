@@ -355,12 +355,20 @@ export const parentDemoOverview = {
   feeBalance: '25,000 RWF',
 };
 
+const demoParent = users.find((user) => user.role === 'parent');
+const demoStudent = students[0];
+
 export const parentDemoChild = {
-  fullName: 'Demo Student',
-  studentId: 'DEMO-S-1001',
-  className: 'ICT Level 3 A',
+  parentId: demoParent?.id ?? null,
+  parentName: demoParent?.fullName ?? 'Demo Parent',
+  fullName: users.find((user) => user.id === demoStudent?.userId)?.fullName ?? 'Demo Student',
+  studentUserId: demoStudent?.userId ?? null,
+  studentId: demoStudent?.studentId ?? '',
+  className: [demoStudent?.trade, demoStudent?.level, demoStudent?.section]
+    .filter(Boolean)
+    .join(' '),
   guardianRelation: 'Parent / Guardian',
-  enrollmentDate: '15 January',
+  enrollmentDate: demoStudent?.enrollmentDate?.toISOString().slice(0, 10) ?? '—',
 };
 
 export const parentDemoAttendance = attendance.map((row) => ({
