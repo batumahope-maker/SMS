@@ -5,6 +5,7 @@ import {
   WriterError,
   approveRegistration,
   isWriterConfigured,
+  writeDisabledMessage,
 } from '@/lib/db-writer';
 
 /**
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
   }
   if (!isWriterConfigured()) {
     return NextResponse.json(
-      { error: 'Approvals are temporarily unavailable. Please try again later.' },
+      { error: writeDisabledMessage(), write_enabled: false },
       { status: 503 }
     );
   }
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
       }
       if (error.code === 'WRITER_NOT_CONFIGURED') {
         return NextResponse.json(
-          { error: 'Approvals are temporarily unavailable. Please try again later.' },
+          { error: writeDisabledMessage(), write_enabled: false },
           { status: 503 }
         );
       }

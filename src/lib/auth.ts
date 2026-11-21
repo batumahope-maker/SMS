@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { db } from '@/lib/db';
+import { isDemoMode } from '@/lib/demo-mode';
 import { verifyStoredPassword } from '@/lib/password';
 import { fetchUserRegistrationFlags } from '@/lib/user-flags';
 
@@ -13,6 +14,15 @@ export type LiveRole = (typeof LIVE_ROLES)[number];
 
 export function isLiveRole(value: unknown): value is LiveRole {
   return typeof value === 'string' && (LIVE_ROLES as readonly string[]).includes(value);
+}
+
+/**
+ * Demo mode adds one extra, fully synthetic role so parents can explore their
+ * portal. The live database and non-demo deployments remain unchanged.
+ */
+export function isAuthRole(value: unknown): boolean {
+  if (isLiveRole(value)) return true;
+  return isDemoMode() && value === 'parent';
 }
 
 /**
@@ -73,7 +83,7 @@ export const authOptions: NextAuthOptions = {
         if (!passwordMatch) return null;
 
         const role = String(user.role).toLowerCase();
-        if (!isLiveRole(role)) return null;
+        if (!isAuthRole(role)) return null;
 
         // The forced-change flag lives in the ADDITIVE must_change_password
         // column (approved but not yet applied to the live schema); the

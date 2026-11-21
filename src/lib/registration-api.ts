@@ -14,6 +14,7 @@ import {
   isWriterConfigured,
   registerStudent,
   registerTeacher,
+  writeDisabledMessage,
 } from '@/lib/db-writer';
 import {
   clientKeyOf,
@@ -42,10 +43,10 @@ function writerErrorResponse(error: unknown): NextResponse {
           { status: 409 }
         );
       case 'WRITER_NOT_CONFIGURED':
-        // The read-only application keeps running; public writes are disabled
-        // until the approved live writer account is configured.
+        // Registration remains disabled until a writer is configured or demo
+        // mode is off; demo mode says so explicitly.
         return NextResponse.json(
-          { error: 'Registration is temporarily unavailable. Please try again later.' },
+          { error: writeDisabledMessage(), write_enabled: false },
           { status: 503 }
         );
       case 'WRITER_INPUT_INVALID':
@@ -78,7 +79,7 @@ export async function handleRegistrationSubmission(
 ): Promise<NextResponse> {
   if (!isWriterConfigured()) {
     return NextResponse.json(
-      { error: 'Registration is temporarily unavailable. Please try again later.' },
+      { error: writeDisabledMessage(), write_enabled: false },
       { status: 503 }
     );
   }

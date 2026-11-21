@@ -72,8 +72,8 @@ export async function GET(request: NextRequest) {
 export async function POST() {
   return NextResponse.json(
     {
-      error: 'Write disabled',
-      reason: 'This build is read-only against the live essjt_school_system database.',
+      error: 'Writes are disabled in demo mode. No data was saved.',
+      write_enabled: false,
     },
     { status: 403 }
   );

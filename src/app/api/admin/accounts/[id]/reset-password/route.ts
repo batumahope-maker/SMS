@@ -3,7 +3,12 @@ import { getServerSession } from 'next-auth';
 import { randomBytes } from 'crypto';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { WriterError, isWriterConfigured, setAccountPassword } from '@/lib/db-writer';
+import {
+  WriterError,
+  isWriterConfigured,
+  setAccountPassword,
+  writeDisabledMessage,
+} from '@/lib/db-writer';
 
 /**
  * POST /api/admin/accounts/[id]/reset-password — issue a new temporary
@@ -41,7 +46,7 @@ export async function POST(
   }
   if (!isWriterConfigured()) {
     return NextResponse.json(
-      { error: 'Password reset is temporarily unavailable. Please try again later.' },
+      { error: writeDisabledMessage(), write_enabled: false },
       { status: 503 }
     );
   }
@@ -90,7 +95,7 @@ export async function POST(
       }
       if (error.code === 'WRITER_NOT_CONFIGURED') {
         return NextResponse.json(
-          { error: 'Password reset is temporarily unavailable. Please try again later.' },
+          { error: writeDisabledMessage(), write_enabled: false },
           { status: 503 }
         );
       }

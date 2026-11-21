@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import type { JWT } from 'next-auth/jwt';
+import { isDemoMode } from '@/lib/demo-mode';
 
 /**
  * Server-side role enforcement.
@@ -11,20 +12,27 @@ import type { JWT } from 'next-auth/jwt';
  * only protection.
  */
 
+const DEMO_MODE = isDemoMode();
+
 const ROLE_HOME: Record<string, string> = {
   admin: '/admin/dashboard',
   teacher: '/teacher/dashboard',
   student: '/student/dashboard',
+  ...(DEMO_MODE ? { parent: '/parent/dashboard' } : {}),
 };
 
 const PREFIX_ROLE: Record<string, string> = {
   '/admin': 'admin',
   '/teacher': 'teacher',
   '/student': 'student',
+  ...(DEMO_MODE ? { '/parent': 'parent' } : {}),
 };
 
-/** Prefixes that exist in the UI but have no backing role in the live schema. */
-const UNSUPPORTED_PREFIXES = ['/parent'];
+/**
+ * Prefixes that exist in the UI but have no backing role in the live schema.
+ * The parent portal is opened only for the synthetic Preview demo.
+ */
+const UNSUPPORTED_PREFIXES = DEMO_MODE ? [] : ['/parent'];
 
 function matchPrefix(pathname: string, prefixes: string[]): string | null {
   for (const prefix of prefixes) {

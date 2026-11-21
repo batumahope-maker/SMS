@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import { DemoBanner } from "@/components/DemoBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,7 +51,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
-       <LanguageProvider>
+       <DemoBanner />
+        <LanguageProvider>
   {children}
   <Toaster />
 </LanguageProvider>

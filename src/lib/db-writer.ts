@@ -39,6 +39,7 @@
  */
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { DEMO_WRITE_DISABLED_MESSAGE, isDemoMode } from './demo-mode';
 import {
   BCRYPT_HASH,
   detectStoredPasswordFormat,
@@ -182,8 +183,20 @@ const globalForWriter = globalThis as unknown as {
   essjtWriterRuntime: WriterRuntime | undefined;
 };
 
-/** True when a writer URL is configured (does not connect). */
+/** Message used by every user-facing write guard. */
+export function writeDisabledMessage(): string {
+  return isDemoMode()
+    ? DEMO_WRITE_DISABLED_MESSAGE
+    : 'Writes are temporarily unavailable. Please try again later.';
+}
+
+/**
+ * True when a writer URL is configured (does not connect).
+ * Demo mode always reports false, even if a Preview environment accidentally
+ * has writer variables set.
+ */
 export function isWriterConfigured(): boolean {
+  if (isDemoMode()) return false;
   return Boolean(process.env.WRITER_DATABASE_URL);
 }
 
@@ -219,6 +232,9 @@ function buildWriterUrl(rawUrl: string): string {
 }
 
 function getRuntime(): WriterRuntime {
+  if (isDemoMode()) {
+    throw new WriterError('WRITER_NOT_CONFIGURED', writeDisabledMessage());
+  }
   if (globalForWriter.essjtWriterRuntime) return globalForWriter.essjtWriterRuntime;
 
   const rawUrl = process.env.WRITER_DATABASE_URL;

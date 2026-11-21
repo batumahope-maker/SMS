@@ -4,7 +4,11 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { verifyStoredPassword } from '@/lib/password';
 import { validatePassword } from '@/lib/registration';
-import { WriterError, changeOwnPassword } from '@/lib/db-writer';
+import {
+  WriterError,
+  changeOwnPassword,
+  writeDisabledMessage,
+} from '@/lib/db-writer';
 
 /**
  * POST /api/auth/change-password — self-service password change.
@@ -98,7 +102,7 @@ export async function POST(request: NextRequest) {
       }
       if (error.code === 'WRITER_NOT_CONFIGURED') {
         return NextResponse.json(
-          { error: 'Password changes are temporarily unavailable. Please try again later.' },
+          { error: writeDisabledMessage(), write_enabled: false },
           { status: 503 }
         );
       }

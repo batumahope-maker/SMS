@@ -27,10 +27,18 @@ import {
 
 import { LanguageSwitcher } from '@/components/language/LanguageSwitcher';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, DEMO_MODE_ENABLED } from '@/lib/demo-mode';
 
 export default function LoginPage() {
   const { t } = useLanguage();
   const router = useRouter();
+
+  const fillDemoCredentials = (username: string) => {
+    setUsername(username);
+    setPassword(DEMO_PASSWORD);
+    setShowPassword(true);
+    setError('');
+  };
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -68,7 +76,9 @@ export default function LoginPage() {
               ? '/teacher/dashboard'
               : session.user.role === 'student'
                 ? '/student/dashboard'
-                : '/';
+                : session.user.role === 'parent'
+                  ? '/parent/dashboard'
+                  : '/';
 
         // Honour a callbackUrl set by the middleware, but only for same-site paths.
         const requested = new URLSearchParams(window.location.search).get('callbackUrl');
@@ -124,6 +134,29 @@ export default function LoginPage() {
           </CardHeader>
 
           <CardContent>
+            {DEMO_MODE_ENABLED && (
+              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                <p className="font-semibold">Synthetic demo mode</p>
+                <p className="mt-1">
+                  Use the synthetic accounts below. Saves are disabled in
+                  demo mode.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {DEMO_ACCOUNTS.map((account) => (
+                    <Button
+                      key={account.username}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => fillDemoCredentials(account.username)}
+                    >
+                      {account.role}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
 
               {error && (

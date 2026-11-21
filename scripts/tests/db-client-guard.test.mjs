@@ -83,7 +83,12 @@ process.env.DATABASE_URL =
   'mysql://guardtest:guardtest@127.0.0.1:1/guardtest';
 
 transpile('src/lib/read-only-guard.ts');
+transpile('src/lib/demo-mode.ts');
+transpile('src/lib/demo-data.ts');
+transpile('src/lib/demo-db.ts');
 transpile('src/lib/db.ts');
+transpile('src/lib/password.ts');
+transpile('src/lib/db-writer.ts');
 
 const guard = require(path.join(outDir, 'read-only-guard.js'));
 const { db } = require(path.join(outDir, 'db.js'));

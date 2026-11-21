@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client';
+import { demoDb } from './demo-db';
+import { isDemoMode } from './demo-mode';
 import {
   ReadOnlyDatabaseError,
   isBlockedRawMethod,
@@ -17,7 +19,7 @@ import {
  * Read operations (`findMany`, `findFirst`, `count`, `groupBy`, `$queryRaw`, …)
  * pass through unchanged.
  */
-function createClient() {
+function createLiveClient() {
   const base = new PrismaClient();
 
   const guarded = base.$extends({
@@ -46,8 +48,15 @@ function createClient() {
   });
 }
 
+function createClient() {
+  // Demo mode must short-circuit before Prisma reads DATABASE_URL. The current
+  // Preview failure ("URL must start with mysql://") is avoided entirely.
+  if (isDemoMode()) return demoDb as ReturnType<typeof createLiveClient>;
+  return createLiveClient();
+}
+
 const globalForPrisma = globalThis as unknown as {
-  prisma: ReturnType<typeof createClient> | undefined;
+  prisma: ReturnType<typeof createLiveClient> | undefined;
 };
 
 export const db = globalForPrisma.prisma ?? createClient();

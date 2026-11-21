@@ -31,11 +31,14 @@ export const RAW_WRITE_METHODS: ReadonlySet<string> = new Set([
 
 export class ReadOnlyDatabaseError extends Error {
   constructor(operation: string, model?: string) {
-    super(
-      `Refused ${operation}${model ? ` on ${model}` : ''}: ` +
-        'this build is read-only against the live database. ' +
-        'See scripts/refuse-db-mutation.mjs.'
-    );
+    const demoMode =
+      process.env.NEXT_PUBLIC_DEMO_MODE === '1' ||
+      String(process.env.NEXT_PUBLIC_DEMO_MODE ?? '').toLowerCase() === 'true';
+    const reason = demoMode
+      ? 'writes are disabled in demo mode. No data was saved.'
+      : 'this build is read-only against the live database. ' +
+        'See scripts/refuse-db-mutation.mjs.';
+    super(`Refused ${operation}${model ? ` on ${model}` : ''}: ${reason}`);
     this.name = 'ReadOnlyDatabaseError';
   }
 }

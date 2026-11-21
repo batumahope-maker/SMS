@@ -9,7 +9,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { WriterError, isWriterConfigured } from '@/lib/db-writer';
+import {
+  WriterError,
+  isWriterConfigured,
+  writeDisabledMessage,
+} from '@/lib/db-writer';
 
 /** Returns a 401 response when the caller is not an admin session. */
 export async function guardAdmin(): Promise<NextResponse | null> {
@@ -24,7 +28,7 @@ export async function guardAdmin(): Promise<NextResponse | null> {
 export function guardWriter(): NextResponse | null {
   if (!isWriterConfigured()) {
     return NextResponse.json(
-      { error: 'Writes are temporarily unavailable. Please try again later.' },
+      { error: writeDisabledMessage(), write_enabled: false },
       { status: 503 }
     );
   }
@@ -101,7 +105,7 @@ export function errorResponse(error: unknown): NextResponse {
   if (error instanceof WriterError) {
     if (error.code === 'WRITER_NOT_CONFIGURED') {
       return NextResponse.json(
-        { error: 'Writes are temporarily unavailable. Please try again later.' },
+        { error: writeDisabledMessage(), write_enabled: false },
         { status: 503 }
       );
     }

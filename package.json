@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test:guards": "node scripts/tests/grant-audit.test.mjs && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/tests/read-only-guard.test.mjs && node scripts/tests/db-client-guard.test.mjs",
     "test:smoke": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/tests/runtime-smoke.test.mjs",
+    "test:demo": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/tests/demo-mode.test.mjs",
     "test:staging-writes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/tests/staging-writes.test.mjs",
     "test:tl-writes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/tests/tl-writes.test.mjs",
     "admin:password-reset": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/reset-admin-password.mjs",

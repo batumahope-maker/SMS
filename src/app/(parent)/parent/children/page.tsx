@@ -1,13 +1,30 @@
-import { ModuleUnavailable } from '@/components/ModuleUnavailable';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DemoReadOnlyNotice } from '@/components/demo/DemoReadOnlyNotice';
+import { parentDemoChild } from '@/lib/demo-data';
 
 export const dynamic = 'force-dynamic';
 
-export default function Page() {
+export default function ParentChildrenPage() {
   return (
-    <ModuleUnavailable
-      title="Parent portal"
-      detail="The live users.role enum only contains admin, teacher and student, so there is no parent account to sign in with."
-      homeHref="/login"
-    />
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">My children</h1>
+        <p className="text-sm text-muted-foreground">
+          Synthetic child registered to this demo parent account.
+        </p>
+      </div>
+
+      <DemoReadOnlyNotice />
+
+      <Card>
+        <CardHeader><CardTitle>Synthetic child</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p><span className="font-medium">Full name:</span> {parentDemoChild.fullName}</p>
+          <p><span className="font-medium">Student number:</span> {parentDemoChild.studentId}</p>
+          <p><span className="font-medium">Class:</span> {parentDemoChild.className}</p>
+          <p><span className="font-medium">Guardian relation:</span> {parentDemoChild.guardianRelation}</p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
