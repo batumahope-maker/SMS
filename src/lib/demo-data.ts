@@ -51,7 +51,39 @@ const currentYear = new Date().getFullYear();
 const account = (role: (typeof DEMO_ACCOUNTS)[number]['role']) =>
   DEMO_ACCOUNTS.find((item) => item.role === role)!;
 
-const users = [
+export interface DemoUser {
+  id: number;
+  username: string;
+  password: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: string;
+  createdAt: Date;
+  /** Demo mirror of the live additive must_change_password column. */
+  mustChangePassword?: boolean;
+  /** Demo mirror of the live additive registration_status column. */
+  registrationStatus?: string;
+}
+
+export interface DemoRegistration {
+  id: number;
+  username: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  /** 'student' | 'teacher' — the role the applicant asked for. Parents appear
+   *  only in the synthetic demo set. */
+  role: 'student' | 'teacher' | 'parent';
+  /** Live `users.status` mirror: the account is not active yet. */
+  status: 'Inactive' | 'Active';
+  /** Live `registration_status` mirror: queued, approved or rejected. */
+  registrationStatus: 'pending' | 'approved' | 'rejected';
+  createdAt: Date;
+}
+
+const users: DemoUser[] = [
   {
     id: 1001,
     username: account('admin').username,
@@ -121,6 +153,49 @@ const students = [
     enrollmentDate: fixedDate(currentYear, 1, 15),
     feePaid: money('150000.00'),
     feeBalance: money('25000.00'),
+  },
+];
+
+/**
+ * Synthetic registration queue for the admin account-management page. Live
+ * registrations are `users` rows with role in (student, teacher) and status
+ * Inactive + registration_status 'pending'; parents appear only in the
+ * synthetic demo set. Approving creates/activates the applicant's account
+ * (see src/lib/demo-registration-writer.ts).
+ */
+const registrations: DemoRegistration[] = [
+  {
+    id: 6011,
+    username: 'demo.new.student',
+    fullName: 'Demo New Student',
+    email: 'demo.new.student@example.com',
+    phone: '+250 000 000 010',
+    role: 'student',
+    status: 'Inactive',
+    registrationStatus: 'pending',
+    createdAt: dateOnly(-1),
+  },
+  {
+    id: 6012,
+    username: 'demo.new.teacher',
+    fullName: 'Demo New Teacher',
+    email: 'demo.new.teacher@example.com',
+    phone: '+250 000 000 011',
+    role: 'teacher',
+    status: 'Inactive',
+    registrationStatus: 'pending',
+    createdAt: dateOnly(-1),
+  },
+  {
+    id: 6013,
+    username: 'demo.new.parent',
+    fullName: 'Demo New Parent',
+    email: 'demo.new.parent@example.com',
+    phone: '+250 000 000 012',
+    role: 'parent',
+    status: 'Inactive',
+    registrationStatus: 'pending',
+    createdAt: dateOnly(-2),
   },
 ];
 
@@ -513,6 +588,7 @@ const libraryBooks = [
 export const demoData = {
   user: users,
   admin: admins,
+  registrations,
   hostelRooms,
   hostelAllocations,
   school,

@@ -27,7 +27,7 @@ interface PendingRegistration {
   fullName: string;
   email: string;
   phone: string | null;
-  role: 'student' | 'teacher';
+  role: 'student' | 'teacher' | 'parent';
   createdAt: string;
 }
 
@@ -171,8 +171,7 @@ export function PendingRegistrationsCard() {
           </p>
         ) : registrations.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No pending registrations. (Also empty until the approved live
-            schema change adds the registration status column.)
+            No pending registrations.
           </p>
         ) : (
           <div className="overflow-x-auto">

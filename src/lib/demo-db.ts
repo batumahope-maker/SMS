@@ -301,7 +301,13 @@ function rawQuery(sqlInput: unknown, values: unknown[] = []): DemoRow[] {
   if (normalized.includes("registration_status = 'pending'")) return [];
 
   if (normalized.includes('must_change_password') && normalized.includes('WHERE id = ?')) {
-    return [{ must_change_password: 0, registration_status: null }];
+    const user = users.find((row) => Number(row.id) === Number(values[0]));
+    return [
+      {
+        must_change_password: user?.mustChangePassword === true ? 1 : 0,
+        registration_status: user?.registrationStatus ?? null,
+      },
+    ];
   }
 
   if (normalized.includes('must_change_password FROM users LIMIT 1')) {

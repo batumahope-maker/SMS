@@ -13,6 +13,8 @@
  *     the page — existing live reads are unaffected;
  *   - once the ALTER is applied, these queries just start returning data.
  */
+import { isDemoMode } from './demo-mode';
+import { demoData } from './demo-data';
 import { db } from '@/lib/db';
 
 export interface PendingRegistration {
@@ -21,7 +23,7 @@ export interface PendingRegistration {
   fullName: string;
   email: string;
   phone: string | null;
-  role: 'student' | 'teacher';
+  role: 'student' | 'teacher' | 'parent';
   createdAt: Date;
 }
 
@@ -65,9 +67,26 @@ async function registrationColumnsAvailable(): Promise<boolean> {
 
 /**
  * Pending student/teacher registrations, newest first. Empty when the live
- * columns are not applied yet.
+ * columns are not applied yet. In synthetic demo mode the queue lives in the
+ * in-memory demo data.
  */
 export async function fetchPendingRegistrations(): Promise<PendingRegistration[]> {
+  if (isDemoMode()) {
+    return demoData.registrations
+      .filter((row) => row.registrationStatus === 'pending')
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+      .slice(0, 100)
+      .map((row) => ({
+        id: Number(row.id),
+        username: row.username,
+        fullName: row.fullName,
+        email: row.email,
+        phone: row.phone ?? null,
+        role: row.role,
+        createdAt: new Date(row.createdAt),
+      }));
+  }
+
   if (!(await registrationColumnsAvailable())) return [];
 
   const rows = (await db.$queryRaw`

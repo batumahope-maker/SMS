@@ -9,6 +9,8 @@ import {
   setAccountPassword,
   writeDisabledMessage,
 } from '@/lib/db-writer';
+import { isDemoMode } from '@/lib/demo-mode';
+import { setAccountPasswordDemo } from '@/lib/demo-registration-writer';
 
 /**
  * POST /api/admin/accounts/[id]/reset-password — issue a new temporary
@@ -44,7 +46,8 @@ export async function POST(
   if (!session || session.user.role !== 'admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!isWriterConfigured()) {
+  const demoMode = isDemoMode();
+  if (!demoMode && !isWriterConfigured()) {
     return NextResponse.json(
       { error: writeDisabledMessage(), write_enabled: false },
       { status: 503 }
@@ -76,7 +79,11 @@ export async function POST(
   const temporaryPassword = generateTemporaryPassword();
 
   try {
-    await setAccountPassword(userId, temporaryPassword);
+    if (demoMode) {
+      await setAccountPasswordDemo(userId, temporaryPassword);
+    } else {
+      await setAccountPassword(userId, temporaryPassword);
+    }
     // One-time display. Never logged, never stored in plaintext.
     return NextResponse.json({
       ok: true,

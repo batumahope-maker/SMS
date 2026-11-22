@@ -75,6 +75,7 @@ transpile('src/lib/db-writer.ts');
 transpile('src/lib/user-flags.ts');
 transpile('src/lib/auth.ts');
 transpile('src/lib/tl-reads.ts');
+transpile('src/lib/demo-registration-writer.ts');
 
 const resolveOriginal = Module._resolveFilename;
 Module._resolveFilename = function (request, ...args) {
@@ -94,9 +95,20 @@ Module._resolveFilename = function (request, ...args) {
 const { demoDb, DemoReadOnlyError } = require(path.join(outDir, 'demo-db.js'));
 const { db } = require(path.join(outDir, 'db.js'));
 const { isDemoMode } = require(path.join(outDir, 'demo-mode.js'));
-const { isWriterConfigured, writeDisabledMessage } = require(path.join(outDir, 'db-writer.js'));
+const { isWriterConfigured, writeDisabledMessage, WriterError } = require(
+  path.join(outDir, 'db-writer.js')
+);
 const { authOptions } = require(path.join(outDir, 'auth.js'));
-const { demoData, parentDemoChild, parentDemoOverview } = require(path.join(outDir, 'demo-data.js'));
+const { demoData, parentDemoChild, parentDemoOverview } = require(
+  path.join(outDir, 'demo-data.js')
+);
+const { fetchPendingRegistrations } = require(path.join(outDir, 'user-flags.js'));
+const { verifyStoredPassword } = require(path.join(outDir, 'password.js'));
+const {
+  approveRegistrationDemo,
+  rejectRegistrationDemo,
+  setAccountPasswordDemo,
+} = require(path.join(outDir, 'demo-registration-writer.js'));
 
 (async () => {
   try {
@@ -387,6 +399,171 @@ const { demoData, parentDemoChild, parentDemoOverview } = require(path.join(outD
         password: 'Demo1234!',
       });
       assert.equal(user, null);
+    });
+
+    // ---- Registration approval workflow in demo mode ----
+
+    await testAsync('demo data has synthetic pending registrations for student, teacher and parent', async () => {
+      assert.equal(demoData.registrations.length, 3);
+      assert.deepEqual(
+        demoData.registrations.map((row) => row.role).sort(),
+        ['parent', 'student', 'teacher']
+      );
+      assert.ok(
+        demoData.registrations.every(
+          (row) => row.registrationStatus === 'pending' && row.status === 'Inactive'
+        )
+      );
+      assert.equal(
+        new Set(demoData.registrations.map((row) => row.username)).size,
+        3
+      );
+      assert.equal(new Set(demoData.registrations.map((row) => row.email)).size, 3);
+    });
+
+    await testAsync('fetchPendingRegistrations returns the synthetic pending registrations in demo', async () => {
+      const pending = await fetchPendingRegistrations();
+      assert.equal(pending.length, 3);
+      assert.deepEqual(
+        pending.map((row) => row.role).sort(),
+        ['parent', 'student', 'teacher']
+      );
+      assert.ok(pending.every((row) => row.username.startsWith('demo.new.')));
+    });
+
+    await testAsync('approveRegistrationDemo activates the student applicant and role access works', async () => {
+      assert.equal(
+        await db.user.findUnique({ where: { username: 'demo.new.student' } }),
+        null
+      );
+
+      await approveRegistrationDemo(6011);
+
+      const user = await db.user.findUnique({ where: { username: 'demo.new.student' } });
+      assert.ok(user);
+      assert.equal(user.role, 'student');
+      assert.equal(user.status, 'Active');
+
+      const signedIn = await authOptions.providers[0].options.authorize({
+        username: 'demo.new.student',
+        password: 'Demo1234!',
+      });
+      assert.equal(signedIn?.role, 'student');
+      assert.equal(signedIn?.id, '6011');
+
+      assert.equal((await fetchPendingRegistrations()).some((row) => row.id === 6011), false);
+    });
+
+    await testAsync('approving an already processed or unknown registration is rejected', async () => {
+      await assert.rejects(() => approveRegistrationDemo(6011), (error) =>
+        error instanceof WriterError && error.code === 'NO_PENDING_REGISTRATION'
+      );
+      await assert.rejects(() => approveRegistrationDemo(9999), (error) =>
+        error instanceof WriterError && error.code === 'NO_PENDING_REGISTRATION'
+      );
+    });
+
+    await testAsync('approveRegistrationDemo rejects duplicate usernames and emails', async () => {
+      const usersBefore = demoData.user.map((row) => row.username);
+      const dup = {
+        id: 6021,
+        username: 'demo.admin',
+        fullName: 'Duplicate Admin',
+        email: 'demo.new.student@example.com',
+        phone: '+250 000 000 099',
+        role: 'teacher',
+        status: 'Inactive',
+        registrationStatus: 'pending',
+        createdAt: new Date(),
+      };
+      demoData.registrations.push(dup);
+      try {
+        await assert.rejects(() => approveRegistrationDemo(6021), (error) =>
+          error instanceof WriterError && error.code === 'DUPLICATE_USERNAME'
+        );
+        dup.username = 'demo.dup.teacher';
+        await assert.rejects(() => approveRegistrationDemo(6021), (error) =>
+          error instanceof WriterError && error.code === 'DUPLICATE_EMAIL'
+        );
+      } finally {
+        demoData.registrations.splice(demoData.registrations.indexOf(dup), 1);
+      }
+      // Neither rejected approve may have created a user.
+      assert.deepEqual(demoData.user.map((row) => row.username), usersBefore);
+      assert.equal(
+        await db.user.findUnique({ where: { username: 'demo.dup.teacher' } }),
+        null
+      );
+    });
+
+    await testAsync('approveRegistrationDemo assigns the teacher role to the teacher applicant', async () => {
+      await approveRegistrationDemo(6012);
+      const user = await db.user.findUnique({ where: { username: 'demo.new.teacher' } });
+      assert.ok(user);
+      assert.equal(user.role, 'teacher');
+      assert.equal(user.status, 'Active');
+    });
+
+    await testAsync('approveRegistrationDemo assigns the parent role to the parent applicant', async () => {
+      await approveRegistrationDemo(6013);
+      const user = await db.user.findUnique({ where: { username: 'demo.new.parent' } });
+      assert.ok(user);
+      assert.equal(user.role, 'parent');
+      assert.equal(user.status, 'Active');
+      const signedIn = await authOptions.providers[0].options.authorize({
+        username: 'demo.new.parent',
+        password: 'Demo1234!',
+      });
+      assert.equal(signedIn?.role, 'parent');
+    });
+
+    await testAsync('rejectRegistrationDemo keeps the applicant account inactive', async () => {
+      const rejected = {
+        id: 6031,
+        username: 'demo.reject.teacher',
+        fullName: 'Rejected Teacher',
+        email: 'demo.reject.teacher@example.com',
+        phone: '+250 000 000 021',
+        role: 'teacher',
+        status: 'Inactive',
+        registrationStatus: 'pending',
+        createdAt: new Date(),
+      };
+      demoData.registrations.push(rejected);
+      try {
+        await rejectRegistrationDemo(6031);
+        // A rejected applicant has no account and can never sign in.
+        assert.equal(
+          await db.user.findUnique({ where: { username: 'demo.reject.teacher' } }),
+          null
+        );
+        assert.equal((await fetchPendingRegistrations()).some((row) => row.id === 6031), false);
+        // Rejection is terminal: both actions are refused after it.
+        await assert.rejects(() => rejectRegistrationDemo(6031), (error) =>
+          error instanceof WriterError && error.code === 'NO_PENDING_REGISTRATION'
+        );
+        await assert.rejects(() => approveRegistrationDemo(6031), (error) =>
+          error instanceof WriterError && error.code === 'NO_PENDING_REGISTRATION'
+        );
+      } finally {
+        demoData.registrations.splice(demoData.registrations.indexOf(rejected), 1);
+      }
+      // Already processed or unknown registrations are rejected the same way.
+      await assert.rejects(() => rejectRegistrationDemo(6011), (error) =>
+        error instanceof WriterError && error.code === 'NO_PENDING_REGISTRATION'
+      );
+      await assert.rejects(() => rejectRegistrationDemo(9999), (error) =>
+        error instanceof WriterError && error.code === 'NO_PENDING_REGISTRATION'
+      );
+    });
+
+    await testAsync('setAccountPasswordDemo updates the synthetic account and marks it for change', async () => {
+      await setAccountPasswordDemo(6011, 'NewDemoPass!');
+      const user = await db.user.findUnique({ where: { username: 'demo.new.student' } });
+      assert.ok(user);
+      assert.equal(user.mustChangePassword, true);
+      assert.equal(await verifyStoredPassword('NewDemoPass!', user.password), true);
+      assert.equal(await verifyStoredPassword('Demo1234!', user.password), false);
     });
   } finally {
     rmSync(outDir, { recursive: true, force: true });

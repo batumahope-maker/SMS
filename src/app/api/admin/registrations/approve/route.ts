@@ -7,6 +7,8 @@ import {
   isWriterConfigured,
   writeDisabledMessage,
 } from '@/lib/db-writer';
+import { isDemoMode } from '@/lib/demo-mode';
+import { approveRegistrationDemo } from '@/lib/demo-registration-writer';
 
 /**
  * POST /api/admin/registrations/approve — approve one pending registration.
@@ -15,13 +17,18 @@ import {
  * sp_approve_registration, which only ever touches a pending student or
  * teacher row: status='Active', registration_status='approved'. Admin
  * accounts can never be activated through this endpoint.
+ *
+ * In synthetic demo mode the same transitions run against the in-memory
+ * demo data instead of the writer procedure.
  */
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!isWriterConfigured()) {
+
+  const demoMode = isDemoMode();
+  if (!demoMode && !isWriterConfigured()) {
     return NextResponse.json(
       { error: writeDisabledMessage(), write_enabled: false },
       { status: 503 }
@@ -40,7 +47,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await approveRegistration(userId);
+    if (demoMode) {
+      await approveRegistrationDemo(userId);
+    } else {
+      await approveRegistration(userId);
+    }
     return NextResponse.json({ ok: true, userId });
   } catch (error) {
     if (error instanceof WriterError) {

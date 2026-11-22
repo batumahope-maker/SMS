@@ -7,6 +7,8 @@ import {
   rejectRegistration,
   writeDisabledMessage,
 } from '@/lib/db-writer';
+import { isDemoMode } from '@/lib/demo-mode';
+import { rejectRegistrationDemo } from '@/lib/demo-registration-writer';
 
 /**
  * POST /api/admin/registrations/reject — reject one pending registration.
@@ -14,13 +16,18 @@ import {
  * Admin-only (server-side session check). Delegates to
  * sp_reject_registration: registration_status='rejected' and the account
  * stays status='Inactive', so a rejected applicant can never sign in.
+ *
+ * In synthetic demo mode the same transitions run against the in-memory
+ * demo data instead of the writer procedure.
  */
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!isWriterConfigured()) {
+
+  const demoMode = isDemoMode();
+  if (!demoMode && !isWriterConfigured()) {
     return NextResponse.json(
       { error: writeDisabledMessage(), write_enabled: false },
       { status: 503 }
@@ -39,7 +46,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await rejectRegistration(userId);
+    if (demoMode) {
+      await rejectRegistrationDemo(userId);
+    } else {
+      await rejectRegistration(userId);
+    }
     return NextResponse.json({ ok: true, userId });
   } catch (error) {
     if (error instanceof WriterError) {
