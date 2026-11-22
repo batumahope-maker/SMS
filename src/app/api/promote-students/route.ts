@@ -1,19 +1,34 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { isDemoMode } from '@/lib/demo-mode';
 
-/**
- * Student promotion requires an academic-year/class structure that the live
- * schema does not have, and it would write to the live database.
- */
-const BODY = {
-  error: 'Not available',
-  reason:
-    'Student promotion is disabled: the live schema has no academic-year or class tables, and writes to the live database are not permitted.',
-};
+export async function POST(request: NextRequest) {
+  if (!isDemoMode()) {
+    return NextResponse.json({ error: 'Not available' }, { status: 501 });
+  }
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-export async function POST() {
-  return NextResponse.json(BODY, { status: 501 });
+  try {
+    const body = await request.json() as { actions?: Array<{ studentId?: unknown; action?: unknown }> };
+    const actions = Array.isArray(body.actions) ? body.actions : [];
+    return NextResponse.json({ succeeded: actions.length, failed: 0 });
+  } catch (error) {
+    console.error('Error running demo promotion:', error);
+    return NextResponse.json({ error: 'Promotion failed.' }, { status: 500 });
+  }
 }
 
 export async function GET() {
-  return NextResponse.json(BODY, { status: 501 });
+  if (!isDemoMode()) {
+    return NextResponse.json({ error: 'Not available' }, { status: 501 });
+  }
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return NextResponse.json({ succeeded: 1, failed: 0 });
 }

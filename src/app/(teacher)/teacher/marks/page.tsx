@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { isDemoMode } from '@/lib/demo-mode';
 import { gradeFor } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,8 @@ export default async function TeacherMarksPage() {
 
   const teacher = await db.teacher.findFirst({ where: { userId } });
   if (!teacher) redirect('/login');
+
+  const demoMode = isDemoMode();
 
   // `marks` has no teacher_id column, so the only teacher link available is
   // the subject string on the teacher record and on school_schedule.
@@ -68,21 +71,22 @@ export default async function TeacherMarksPage() {
         </p>
       </div>
 
-      <Card className="border-amber-200 dark:border-amber-900">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Badge variant="outline">Read-only</Badge>
-            Recording marks is disabled in this build
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            The live <code>essjt_school_system</code> database is not written to
-            by this build. Recorded results are shown below; entry and editing
-            will be enabled in a later stage with explicit approval.
-          </p>
-        </CardContent>
-      </Card>
+      {!demoMode && (
+        <Card className="border-amber-200 dark:border-amber-900">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Badge variant="outline">Read-only</Badge>
+              Recording marks is disabled in this build
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              The live <code>essjt_school_system</code> database is not written to
+              by this build. Recorded results are shown below.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

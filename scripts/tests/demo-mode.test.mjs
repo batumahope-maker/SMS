@@ -74,12 +74,15 @@ transpile('src/lib/password.ts');
 transpile('src/lib/db-writer.ts');
 transpile('src/lib/user-flags.ts');
 transpile('src/lib/auth.ts');
+transpile('src/lib/tl-reads.ts');
 
 const resolveOriginal = Module._resolveFilename;
 Module._resolveFilename = function (request, ...args) {
   const map = {
     '@/lib/db': 'db.js',
     '@/lib/demo-mode': 'demo-mode.js',
+    '@/lib/demo-data': 'demo-data.js',
+    '@/lib/demo-db': 'demo-db.js',
     '@/lib/password': 'password.js',
     '@/lib/user-flags': 'user-flags.js',
   };
@@ -290,6 +293,82 @@ const { demoData, parentDemoChild, parentDemoOverview } = require(path.join(outD
 
       const marks = await db.mark.findMany({ where: { subject: 'Introduction to ICT' }, take: 10 });
       assert.ok(marks.length > 0);
+    });
+
+    await testAsync('teacher classes demo pages return synthetic data', async () => {
+      const schedule = await db.schoolSchedule.findMany({ where: { teacherId: 2001, isActive: true } });
+      assert.ok(schedule.length > 0);
+
+      const classRows = [...new Set(schedule.map((row) => [row.trade, row.level, row.section].filter(Boolean).join(' ')))]
+        .filter(Boolean);
+      assert.ok(classRows.some((name) => name.includes('ICT Level 3 A')));
+
+      const students = await db.student.findMany({ where: { userId: 3001 }, select: { id: true, userId: true, studentId: true } });
+      assert.equal(students[0]?.userId, 3001);
+      assert.equal(students[0]?.studentId, 'DEMO-S-1001');
+    });
+
+    await testAsync('teacher attendance writes work in demo mode', async () => {
+      const result = await db.attendance.createMany({
+        data: [{ studentId: 3001, status: 'Present', notes: 'Demo attendance saved', createdAt: new Date() }],
+      });
+      assert.equal(result.count, 1);
+    });
+
+    await testAsync('teacher marks writes work in demo mode', async () => {
+      const result = await db.mark.createMany({
+        data: [{
+          studentId: 3001,
+          subject: 'Introduction to ICT',
+          term: 'Term 2',
+          year: 2026,
+          marks: 85,
+          maxMarks: 100,
+          createdAt: new Date(),
+        }],
+      });
+      assert.equal(result.count, 1);
+    });
+
+    await testAsync('teacher homework demo data and submissions return', async () => {
+      const homework = await db.homework.findMany({ where: { teacherId: 2001 }, orderBy: { dueDate: 'asc' } });
+      assert.ok(homework.length > 0);
+      assert.equal(homework[0]?.studentId, 3001);
+
+      const submissions = await db.homeworkSubmission.findMany({ where: { homeworkId: homework[0].id } });
+      assert.ok(submissions.length >= 0);
+    });
+
+    await testAsync('student homework demo data returns', async () => {
+      const homework = await db.homework.findMany({ where: { studentId: 3001 }, orderBy: { dueDate: 'asc' } });
+      assert.ok(homework.length > 0);
+      assert.equal(homework[0]?.studentId, 3001);
+    });
+
+    await testAsync('teacher marks page demo data has subject', async () => {
+      const marks = await db.mark.findMany({ where: { subject: 'Introduction to ICT' }, take: 10 });
+      assert.ok(marks.length > 0);
+    });
+
+    await testAsync('admin demo hostel, settings, SMS, AI and promotion data exist', () => {
+      assert.equal(demoData.hostelRooms.length, 2);
+      assert.equal(demoData.hostelAllocations.length, 2);
+      assert.equal(demoData.school.name, 'ESSJT Demo School');
+      assert.equal(demoData.smsStats.studentsWithPhone, 1);
+      assert.equal(demoData.aiData.students[0]?.fullName, 'Demo Student');
+      assert.equal(demoData.promoteData.students[0]?.fullName, 'Demo Student');
+    });
+
+    await testAsync('admin demo transport and library reads return synthetic data', async () => {
+      const { readTransportData, readLibraryData } = require(path.join(outDir, 'tl-reads.js'));
+      const transport = await readTransportData();
+      assert.equal(transport.installed, true);
+      assert.ok(transport.data?.vehicles.length > 0);
+      assert.ok(transport.data?.students.some((row) => row.studentName === 'Demo Student'));
+
+      const library = await readLibraryData();
+      assert.equal(library.installed, true);
+      assert.ok(library.data?.books.length > 0);
     });
 
     await testAsync('demo rejects invalid admin password', async () => {

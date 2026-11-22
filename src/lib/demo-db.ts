@@ -477,9 +477,27 @@ const MODELS = [
   'schoolRule',
   'schoolSchedule',
   'loginActivity',
+  'homework',
+  'homeworkSubmission',
+  'lessonPlan',
 ] as const;
 
+const WRITABLE_MODELS = new Set(['mark', 'attendance', 'homework', 'homeworkSubmission', 'lessonPlan']);
+
+function nextId(model: string): number {
+  const ids = getRows(model).map((row) => Number(row.id ?? 0));
+  return (Math.max(0, ...ids) + 1) as number;
+}
+
+function createRow(model: string, data: DemoRow): DemoRow {
+  const row: DemoRow = { ...data, id: nextId(model) };
+  getRows(model).push(row);
+  return row;
+}
+
 function modelHandlers(model: string): DemoRow {
+  const writable = WRITABLE_MODELS.has(model);
+
   return {
     findMany: (args: QueryArgs = {}) => Promise.resolve(runQuery(model, args)),
     findFirst: (args: QueryArgs = {}) => Promise.resolve(runQuery(model, args)[0] ?? null),
@@ -498,9 +516,26 @@ function modelHandlers(model: string): DemoRow {
       Promise.resolve(getRows(model).filter((row) => matchesWhere(row, args?.where)).length),
     aggregate: (args: QueryArgs = {}) => Promise.resolve(aggregate(model, args)),
     groupBy: (args: QueryArgs = {}) => Promise.resolve(groupBy(model, args)),
-    create: () => refused('create', model),
-    createMany: () => refused('createMany', model),
-    createManyAndReturn: () => refused('createManyAndReturn', model),
+    create: writable
+      ? (args: QueryArgs = {}) => {
+          const row = createRow(model, { ...((args?.data as DemoRow) ?? {}) });
+          return Promise.resolve(projectRow(row, model, args?.select ? { select: args.select } : {}));
+        }
+      : () => refused('create', model),
+    createMany: writable
+      ? (args: QueryArgs = {}) => {
+          const data = Array.isArray(args?.data) ? (args.data as DemoRow[]) : [];
+          const rows = data.map((item) => createRow(model, item));
+          return Promise.resolve({ count: rows.length });
+        }
+      : () => refused('createMany', model),
+    createManyAndReturn: writable
+      ? (args: QueryArgs = {}) => {
+          const data = Array.isArray(args?.data) ? (args.data as DemoRow[]) : [];
+          const rows = data.map((item) => createRow(model, item));
+          return Promise.resolve(rows.map((row) => projectRow(row, model, { select: args?.select })));
+        }
+      : () => refused('createManyAndReturn', model),
     update: () => refused('update', model),
     updateMany: () => refused('updateMany', model),
     updateManyAndReturn: () => refused('updateManyAndReturn', model),

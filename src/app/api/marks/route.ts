@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { isDemoMode } from '@/lib/demo-mode';
 
 /**
  * Read-only results.
@@ -82,12 +83,69 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST() {
-  return NextResponse.json(
-    {
-      error: 'Write disabled',
-      reason: 'This build is read-only against the live essjt_school_system database.',
-    },
-    { status: 403 }
-  );
+export async function POST(request: NextRequest) {
+  if (!isDemoMode()) {
+    return NextResponse.json(
+      { error: 'Write disabled', reason: 'Live database writes are not configured.' },
+      { status: 403 }
+    );
+  }
+
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (session.user.role !== 'teacher' && session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json() as {
+      records?: Array<{
+        studentId?: unknown;
+        subjectId?: unknown;
+        marks?: unknown;
+        term?: unknown;
+        examType?: unknown;
+        academicYear?: unknown;
+      }>;
+    };
+    if (!Array.isArray(body.records)) {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+    }
+
+    const records = body.records
+      .map((record) => {
+        const studentId = Number(record.studentId);
+        const marks = Number(record.marks);
+        if (!Number.isInteger(studentId) || studentId <= 0) return null;
+        if (!Number.isFinite(marks) || marks < 0 || marks > 100) return null;
+        const subject = String(record.subjectId ?? '').trim();
+        if (!subject) return null;
+        const term = String(record.term ?? 'Term 1').trim() || 'Term 1';
+        const examType = String(record.examType ?? 'Test').trim() || 'Test';
+        const academicYear = Number(record.academicYear);
+        return {
+          studentId,
+          subject,
+          term,
+          examType,
+          year: Number.isInteger(academicYear) ? academicYear : new Date().getFullYear(),
+          marks,
+          maxMarks: 100,
+          createdAt: new Date(),
+        };
+      })
+      .filter((record): record is NonNullable<typeof record> => record !== null);
+
+    if (records.length === 0) {
+      return NextResponse.json({ ok: true, count: 0 });
+    }
+
+    const result = await db.mark.createMany({ data: records });
+    return NextResponse.json({ ok: true, count: result.count });
+  } catch (error) {
+    console.error('Error saving demo marks:', error);
+    return NextResponse.json({ error: 'Failed to save marks.' }, { status: 500 });
+  }
 }

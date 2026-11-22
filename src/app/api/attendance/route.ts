@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { isDemoMode } from '@/lib/demo-mode';
 
 /**
  * Read-only attendance.
@@ -69,12 +70,59 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST() {
-  return NextResponse.json(
-    {
-      error: 'Writes are disabled in demo mode. No data was saved.',
-      write_enabled: false,
-    },
-    { status: 403 }
-  );
+function normalizeStatus(value: unknown): 'Present' | 'Absent' | 'Late' {
+  const status = String(value ?? '').trim().toLowerCase();
+  if (status === 'present') return 'Present';
+  if (status === 'absent') return 'Absent';
+  if (status === 'late') return 'Late';
+  return 'Present';
+}
+
+export async function POST(request: NextRequest) {
+  if (!isDemoMode()) {
+    return NextResponse.json(
+      { error: 'Write disabled', reason: 'Live database writes are not configured.' },
+      { status: 403 }
+    );
+  }
+
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (session.user.role !== 'teacher' && session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json() as {
+      records?: Array<{ studentId?: unknown; status?: unknown; notes?: unknown }>;
+    };
+    if (!Array.isArray(body.records)) {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+    }
+
+    const records = body.records
+      .map((record) => {
+        const studentId = Number(record.studentId);
+        if (!Number.isInteger(studentId) || studentId <= 0) return null;
+        return {
+          studentId,
+          status: normalizeStatus(record.status),
+          notes: record.notes == null ? null : String(record.notes),
+          createdAt: new Date(),
+        };
+      })
+      .filter((record): record is NonNullable<typeof record> => record !== null);
+
+    if (records.length === 0) {
+      return NextResponse.json({ ok: true, count: 0 });
+    }
+
+    const result = await db.attendance.createMany({ data: records });
+    return NextResponse.json({ ok: true, count: result.count });
+  } catch (error) {
+    console.error('Error saving demo attendance:', error);
+    return NextResponse.json({ error: 'Failed to save attendance.' }, { status: 500 });
+  }
 }

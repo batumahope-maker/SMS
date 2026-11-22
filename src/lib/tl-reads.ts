@@ -10,6 +10,8 @@
  */
 import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
+import { demoData } from '@/lib/demo-data';
+import { isDemoMode } from '@/lib/demo-mode';
 
 export interface VehicleRow {
   id: number;
@@ -134,6 +136,36 @@ export async function readTransportData(): Promise<{
   installed: boolean;
   data: TransportData | null;
 }> {
+  if (isDemoMode()) {
+    const students = await readStudents();
+    const vehicles = demoData.transportVehicles.map((row) => ({
+      id: row.id,
+      vehicleNumber: row.vehicleNumber,
+      vehicleType: row.vehicleType,
+      capacity: row.capacity,
+      driverName: row.driverName,
+      driverPhone: row.driverPhone,
+    }));
+    const routes = demoData.transportRoutes.map((row) => ({
+      id: row.id,
+      vehicleId: row.vehicleId,
+      name: row.name,
+      stops: row.stops,
+      morningTime: timeToHHMM(row.morningTime),
+      eveningTime: timeToHHMM(row.eveningTime),
+      fare: row.fare,
+      assignmentCount: row.assignment_count,
+    }));
+    const assignments = demoData.transportAssignments.map((row) => ({
+      studentId: row.student_id,
+      routeId: row.route_id,
+      pickupPoint: row.pickup_point,
+      studentName: row.student_name,
+      studentCode: row.student_code,
+    }));
+    return { installed: true, data: { vehicles, routes, assignments, students } };
+  }
+
   return readTL<TransportData>(async () => {
     const vehicleRows = (await db.$queryRawUnsafe(
       `SELECT id, vehicle_number, vehicle_type, capacity, driver_name, driver_phone
@@ -189,6 +221,23 @@ export async function readLibraryData(): Promise<{
   installed: boolean;
   data: LibraryData | null;
 }> {
+  if (isDemoMode()) {
+    const students = await readStudents();
+    const books = demoData.libraryBooks.map((row) => ({
+      id: row.id,
+      title: row.title,
+      author: row.author,
+      isbn: row.isbn,
+      category: row.category,
+      publisher: row.publisher,
+      publishedYear: row.published_year,
+      quantity: row.quantity,
+      available: row.available,
+      location: row.location,
+    }));
+    return { installed: true, data: { books, issues: [], students } };
+  }
+
   return readTL<LibraryData>(async () => {
     const bookRows = (await db.$queryRawUnsafe(
       `SELECT id, title, author, isbn, category, publisher, published_year,

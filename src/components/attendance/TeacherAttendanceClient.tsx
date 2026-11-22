@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Clock, AlertCircle, Save, ClipboardCheck } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Save, ClipboardCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Student { id: string; fullName: string; studentId: string }
 interface ClassWithStudents { id: string; name: string; students: Student[] }
 interface RecentRecord { id: string; date: Date; status: string; student: { fullName: string; studentId: string } }
 
-type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+type AttendanceStatus = 'present' | 'absent' | 'late';
 
 interface TeacherAttendanceClientProps {
   classes: ClassWithStudents[];
@@ -24,8 +24,7 @@ const statusOptions: { value: AttendanceStatus; label: string; color: string; Ic
   { value: 'present', label: 'Present', color: 'bg-green-500 hover:bg-green-600', Icon: CheckCircle },
   { value: 'absent',  label: 'Absent',  color: 'bg-red-500 hover:bg-red-600',    Icon: XCircle },
   { value: 'late',    label: 'Late',    color: 'bg-yellow-500 hover:bg-yellow-600', Icon: Clock },
-  { value: 'excused', label: 'Excused', color: 'bg-blue-500 hover:bg-blue-600',  Icon: AlertCircle },
-];
+  ];
 
 const badgeCls: Record<string, string> = {
   present: 'bg-green-100 text-green-800', absent: 'bg-red-100 text-red-800',

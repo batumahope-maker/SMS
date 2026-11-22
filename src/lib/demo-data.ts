@@ -331,9 +331,198 @@ const loginActivity = [
   },
 ];
 
+const homework = [
+  {
+    id: 5011,
+    teacherId: 2001,
+    studentId: 3001,
+    className: 'ICT Level 3 A',
+    subject: 'Introduction to ICT',
+    title: 'Read Chapter 1',
+    description: 'Read textbook chapter 1 and prepare three questions for class.',
+    dueDate: dateOnly(2),
+    maxMarks: 20,
+    createdAt: dateOnly(-2),
+  },
+  {
+    id: 5012,
+    teacherId: 2001,
+    studentId: 3001,
+    className: 'ICT Level 3 A',
+    subject: 'Introduction to ICT',
+    title: 'Practice database design',
+    description: 'Draw an ER diagram for a small library database.',
+    dueDate: dateOnly(6),
+    maxMarks: 50,
+    createdAt: dateOnly(-1),
+  },
+];
+
+const homeworkSubmissions = [
+  {
+    id: 5101,
+    homeworkId: 5011,
+    studentId: 3001,
+    submittedAt: dateOnly(-1),
+    marks: 19,
+    content: 'Q1, Q2, Q3 prepared. See notebook.',
+  },
+];
+
+const lessonPlans = [
+  {
+    id: 5201,
+    teacherId: 2001,
+    title: 'Introduction to ICT',
+    subject: 'Introduction to ICT',
+    objectives: 'Students will understand basic network and database concepts.',
+    content: 'Explain network types, then walk through database normalisation.',
+    resources: 'Laptop, projector, example ER diagram.',
+    date: dateOnly(2),
+    duration: 45,
+  },
+  {
+    id: 5202,
+    teacherId: 2001,
+    title: 'Database Basics',
+    subject: 'Database Basics',
+    objectives: 'Students will identify tables, keys and relationships.',
+    content: 'Guided lab creating tables for a school database.',
+    resources: 'MySQL client, printed handouts.',
+    date: dateOnly(3),
+    duration: 50,
+  },
+];
+
+const hostelRooms = [
+  {
+    id: 'demo-hostel-room-1',
+    roomNumber: 'DEMO-101',
+    block: 'Block A',
+    floor: 1,
+    capacity: 4,
+    gender: 'Female',
+    _count: { allocations: 2 },
+  },
+  {
+    id: 'demo-hostel-room-2',
+    roomNumber: 'DEMO-102',
+    block: 'Block A',
+    floor: 2,
+    capacity: 3,
+    gender: 'Male',
+    _count: { allocations: 1 },
+  },
+];
+
+const hostelAllocations = [
+  {
+    id: 'demo-hostel-alloc-1',
+    bedNumber: 'A101',
+    allocatedAt: dateOnly(-2),
+    student: { fullName: 'Demo Student', studentId: 'DEMO-S-1001', gender: 'Female' },
+    room: { roomNumber: 'DEMO-101', block: 'Block A' },
+  },
+  {
+    id: 'demo-hostel-alloc-2',
+    bedNumber: 'B201',
+    allocatedAt: dateOnly(-1),
+    student: { fullName: 'Demo Student', studentId: 'DEMO-S-1001', gender: 'Female' },
+    room: { roomNumber: 'DEMO-101', block: 'Block A' },
+  },
+];
+
+const school = {
+  id: 'demo-school',
+  name: 'ESSJT Demo School',
+  slug: 'essjt-demo',
+  logo: null,
+  address: 'Kigali, Rwanda',
+  phone: '+250 000 000 000',
+  email: 'demo@example.com',
+  website: null,
+  motto: 'Demo school platform',
+  primaryColor: '#047857',
+  secondaryColor: '#059669',
+  language: 'en',
+  timezone: 'Africa/Kigali',
+  academicYear: '2026-2027',
+  licenseStatus: 'trial',
+  plan: 'demo',
+  licenseKey: 'DEMO-LICENSE-KEY',
+};
+
+const demoClasses = [
+  { id: 'class-ICT-3A', name: 'ICT Level 3 A', _count: { students: 1 } },
+];
+
+const smsStats = { absentToday: 1, studentsWithPhone: 1, feeDefaulters: 1 };
+
+const aiData = {
+  students: [{ id: 'student-3001', fullName: 'Demo Student', studentId: 'DEMO-S-1001' }],
+  classes: demoClasses,
+  school: {
+    id: 'demo-school',
+    name: 'ESSJT Demo School',
+    totalStudents: 1,
+    averageGrade: 82,
+    passRate: 100,
+    weakStudents: 0,
+    overdueFees: 1,
+  },
+  classICT: {
+    id: 'class-ICT-3A',
+    name: 'ICT Level 3 A',
+    totalStudents: 1,
+    averageGrade: 82,
+    strong: 1,
+    atRisk: 0,
+  },
+};
+
+const promoteData = {
+  students: [
+    {
+      id: 'student-3001',
+      studentId: 'DEMO-S-1001',
+      fullName: 'Demo Student',
+      currentClass: 'ICT Level 3 A',
+      currentLevel: 'Level 3',
+      average: 82,
+      passed: true,
+      recommendation: 'promote',
+    },
+  ],
+  classes: demoClasses,
+  previewData: { total: 1, toPromote: 1, toRepeat: 0, noData: 0 },
+};
+
+const transportVehicles = [
+  { id: 301, vehicleNumber: 'RAB 111A', vehicleType: 'Bus', capacity: 4, driverName: 'Demo Driver', driverPhone: '+250 000 000 005' },
+];
+const transportRoutes = [
+  { id: 302, vehicleId: 301, name: 'DEMO Route A', stops: 'DemoStop A, DemoStop B', morningTime: timeAt(7, 0), eveningTime: timeAt(17, 0), fare: 500, assignment_count: 1 },
+];
+const transportAssignments = [
+  { student_id: 3001, route_id: 302, pickup_point: 'DemoStop A', student_name: 'Demo Student', student_code: 'DEMO-S-1001' },
+];
+const libraryBooks = [
+  { id: 401, title: 'Demo Book', author: 'Demo Author', isbn: 'DEMO-ISBN-001', category: 'ICT', publisher: 'Demo Publisher', published_year: 2026, quantity: 2, available: 2, location: 'Demo Shelf' },
+];
+
 export const demoData = {
   user: users,
   admin: admins,
+  hostelRooms,
+  hostelAllocations,
+  school,
+  smsStats,
+  aiData,
+  promoteData,
+  transportVehicles,
+  transportRoutes,
+  transportAssignments,
+  libraryBooks,
   student: students,
   teacher: teachers,
   announcement: announcements,
@@ -344,6 +533,9 @@ export const demoData = {
   schoolRule: schoolRules,
   schoolSchedule: schoolSchedules,
   loginActivity,
+  homework,
+  homeworkSubmission: homeworkSubmissions,
+  lessonPlan: lessonPlans,
 };
 
 export const parentDemoOverview = {

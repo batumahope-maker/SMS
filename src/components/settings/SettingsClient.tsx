@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Settings, School, Shield, Globe, CheckCircle } from 'lucide-react';
+import { Settings, School, Shield, Globe, CheckCircle, Ban } from 'lucide-react';
+import { DEMO_MODE_ENABLED } from '@/lib/demo-mode';
 
 interface School {
   id: string; name: string; slug: string; logo: string | null; address: string | null;
@@ -20,6 +21,7 @@ interface License {
 interface SettingsClientProps { school: School; license: License | null; }
 
 export function SettingsClient({ school, license }: SettingsClientProps) {
+  const demoMode = DEMO_MODE_ENABLED;
   const [form, setForm] = useState({ ...school });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -144,7 +146,16 @@ export function SettingsClient({ school, license }: SettingsClientProps) {
       </Card>
 
       <div className="flex items-center gap-3">
-        <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save settings'}</Button>
+        {demoMode && (
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20">
+            <Ban className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-sm text-amber-800 dark:text-amber-300">Settings are read-only in demo mode</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">Synthetic school settings are shown, but saving is disabled.</p>
+            </div>
+          </div>
+        )}
+        <Button onClick={handleSave} disabled={saving || demoMode}>{saving ? 'Saving...' : 'Save settings'}</Button>
         {saved && <span className="flex items-center gap-1 text-sm text-green-600"><CheckCircle className="w-4 h-4" />Saved successfully</span>}
       </div>
     </div>

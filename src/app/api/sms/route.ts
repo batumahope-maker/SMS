@@ -1,19 +1,34 @@
 import { NextResponse } from 'next/server';
-
-/**
- * SMS sending is disabled: it depends on greenfield tables and would transmit
- * personal data to an external service, which is explicitly out of scope.
- */
-const BODY = {
-  error: 'Not available',
-  reason:
-    'SMS dispatch is disabled in this build. No personal data is transmitted to external services.',
-};
+import { isDemoMode } from '@/lib/demo-mode';
 
 export async function GET() {
-  return NextResponse.json(BODY, { status: 501 });
+  if (!isDemoMode()) {
+    return NextResponse.json({
+      error: 'Not available',
+      reason: 'The live essjt_school_system schema has no SMS tables.',
+    }, { status: 501 });
+  }
+  return NextResponse.json({
+    sent: 0,
+    failed: 0,
+    skipped: 0,
+    total: 0,
+    error: 'SMS dispatch is disabled in demo mode. No messages are sent.',
+  }, { status: 200 });
 }
 
 export async function POST() {
-  return NextResponse.json(BODY, { status: 501 });
+  if (!isDemoMode()) {
+    return NextResponse.json({
+      error: 'Not available',
+      reason: 'The live essjt_school_system schema has no SMS tables.',
+    }, { status: 501 });
+  }
+  return NextResponse.json({
+    sent: 0,
+    failed: 0,
+    skipped: 0,
+    total: 0,
+    error: 'SMS dispatch is disabled in demo mode. No messages are sent.',
+  }, { status: 200 });
 }

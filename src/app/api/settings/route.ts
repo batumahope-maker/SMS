@@ -1,34 +1,35 @@
 import { NextResponse } from 'next/server';
+import { demoData } from '@/lib/demo-data';
+import { isDemoMode } from '@/lib/demo-mode';
 
-/**
- * The live essjt_school_system database has no `settings` or `schools` table,
- * so there is nothing to read or update. Returning null keeps the public
- * landing page working without inventing a settings store.
- */
 export async function GET() {
-  return NextResponse.json(null, {
-    headers: { 'Cache-Control': 'no-store' },
-  });
+  if (!isDemoMode()) {
+    return NextResponse.json(null, { headers: { 'Cache-Control': 'no-store' } });
+  }
+  return NextResponse.json(demoData.school, { headers: { 'Cache-Control': 'no-store' } });
+}
+
+async function notAvailable() {
+  return NextResponse.json(
+    {
+      error: 'Not available',
+      reason: 'In demo mode settings are read-only and no settings store exists.',
+    },
+    { status: 501 }
+  );
 }
 
 export async function PUT() {
-  return NextResponse.json(
-    {
-      error: 'Not available',
-      reason:
-        'The live essjt_school_system schema has no settings or schools table.',
-    },
-    { status: 501 }
-  );
+  if (!isDemoMode()) return notAvailable();
+  return notAvailable();
 }
 
 export async function POST() {
-  return NextResponse.json(
-    {
-      error: 'Not available',
-      reason:
-        'The live essjt_school_system schema has no settings or schools table.',
-    },
-    { status: 501 }
-  );
+  if (!isDemoMode()) return notAvailable();
+  return notAvailable();
+}
+
+export async function PATCH() {
+  if (!isDemoMode()) return notAvailable();
+  return notAvailable();
 }
