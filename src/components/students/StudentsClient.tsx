@@ -83,6 +83,8 @@ interface Class {
   section: string;
 }
 
+export type { Student, Class };
+
 interface StudentsClientProps {
   students: Student[];
   classes: Class[];

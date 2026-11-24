@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { formatMoney } from '@/lib/format';
+import { isDemoMode } from '@/lib/demo-mode';
 import { Button } from '@/components/ui/button';
+import { AdminStudentsClient } from '@/components/admin/AdminStudentsClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -26,6 +28,11 @@ export default async function StudentsPage({
 }) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') redirect('/login');
+
+  // In synthetic demo mode the management UI (StudentsClient) is wired to
+  // the server API, which writes into the in-memory demo data. The live
+  // build keeps the read-only view.
+  if (isDemoMode()) return <AdminStudentsClient />;
 
   const params = await searchParams;
   const rawPage = Array.isArray(params.page) ? params.page[0] : params.page;

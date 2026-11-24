@@ -50,7 +50,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface Teacher {
+export interface Teacher {
   id: string;
   teacherId: string;
   fullName: string;

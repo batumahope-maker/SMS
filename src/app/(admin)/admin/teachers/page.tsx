@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { formatDate } from '@/lib/format';
+import { isDemoMode } from '@/lib/demo-mode';
+import { AdminTeachersClient } from '@/components/admin/AdminTeachersClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -18,6 +20,10 @@ export const dynamic = 'force-dynamic';
 export default async function TeachersPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') redirect('/login');
+
+  // In synthetic demo mode the management UI (TeachersClient) is wired to
+  // the server API, which writes into the in-memory demo data.
+  if (isDemoMode()) return <AdminTeachersClient />;
 
   const teachers = await db.teacher.findMany({
     orderBy: { id: 'asc' },

@@ -1,3 +1,12 @@
+import Link from 'next/link';
+import {
+  DollarSign,
+  FileText,
+  ClipboardCheck,
+  MessageSquare,
+  Users,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DemoReadOnlyNotice } from '@/components/demo/DemoReadOnlyNotice';
 import { formatMoney } from '@/lib/format';
@@ -88,6 +97,46 @@ export default function ParentDashboardPage() {
             <p><span className="font-medium">Student user ID:</span> {String(parentDemoChild.studentUserId)}</p>
           <p><span className="font-medium">Guardian relation:</span> {parentDemoChild.guardianRelation}</p>
           <p><span className="font-medium">Enrollment date:</span> {parentDemoChild.enrollmentDate}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick access</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <Link href="/parent/children">
+              <Button variant="outline" className="w-full justify-start">
+                <Users className="h-4 w-4 mr-2" />
+                Children
+              </Button>
+            </Link>
+            <Link href="/parent/grades">
+              <Button variant="outline" className="w-full justify-start">
+                <FileText className="h-4 w-4 mr-2" />
+                Grades
+              </Button>
+            </Link>
+            <Link href="/parent/attendance">
+              <Button variant="outline" className="w-full justify-start">
+                <ClipboardCheck className="h-4 w-4 mr-2" />
+                Attendance
+              </Button>
+            </Link>
+            <Link href="/parent/fees">
+              <Button variant="outline" className="w-full justify-start">
+                <DollarSign className="h-4 w-4 mr-2" />
+                Fees
+              </Button>
+            </Link>
+            <Link href="/parent/messages">
+              <Button variant="outline" className="w-full justify-start">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Messages
+              </Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

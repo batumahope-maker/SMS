@@ -85,6 +85,8 @@ export type WriterErrorCode =
   | 'VERIFY_FAILED_OR_NOT_PERMITTED'
   | 'VALUE_TOO_LONG'
   | 'WRITER_DB_ERROR'
+  | 'RECORD_NOT_FOUND'
+  | 'DUPLICATE_STUDENT_ID'
   /* Transport & Library */
   | 'INVALID_CAPACITY'
   | 'DUPLICATE_VEHICLE_NUMBER'

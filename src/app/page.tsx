@@ -41,7 +41,6 @@ type PortalCard = {
   border: string;
   features: string[];
   badge: string;
-  comingSoon?: boolean;
 };
 
 const portals: PortalCard[] = [
@@ -100,15 +99,19 @@ const portals: PortalCard[] = [
     key: 'parent',
     title: 'Parent Portal',
     description:
-      'Parent accounts are not issued yet. Contact the school office about your child’s progress.',
+      'View your child’s grades, attendance and fees, and messages from the school office.',
     icon: Users,
     href: '/login',
     color: 'from-orange-500 to-red-500',
     bg: 'bg-orange-50 dark:bg-orange-950/30',
     border: 'border-orange-200 dark:border-orange-800',
-    features: [],
+    features: [
+      'Dashboard with your child’s summary',
+      'Grades and attendance records',
+      'Fee summary and payment history',
+      'School messages',
+    ],
     badge: 'Parents',
-    comingSoon: true,
   },
 ];
 
@@ -227,17 +230,11 @@ export default function HomePage() {
           {portals.map((p) => {
             const card = (
               <Card
-                className={`h-full border-2 ${p.border} ${p.bg} ${
-                  p.comingSoon
-                    ? 'opacity-95'
-                    : 'transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
-                }`}
+                className={`h-full border-2 ${p.border} ${p.bg} transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5`}
               >
                 <CardHeader className="pb-3">
                   <div
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-3 shadow-md ${
-                      p.comingSoon ? '' : 'group-hover:scale-105 transition-transform'
-                    }`}
+                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-3 shadow-md group-hover:scale-105 transition-transform`}
                   >
                     <p.icon className="w-6 h-6 text-white" />
                   </div>
@@ -247,11 +244,7 @@ export default function HomePage() {
                       {t(`portal.${p.key}`)}
                     </CardTitle>
 
-                    {p.comingSoon ? (
-                      <Lock className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground mt-0.5 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                    )}
+                    <ChevronRight className="w-4 h-4 text-muted-foreground mt-0.5 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
                   </div>
 
                   <CardDescription className="text-xs leading-relaxed">
@@ -274,18 +267,14 @@ export default function HomePage() {
 
                   <div className="mt-4">
                     <Badge variant="outline" className="text-xs">
-                      {p.comingSoon ? t('landing.coming_soon') : p.badge}
+                      {p.badge}
                     </Badge>
                   </div>
                 </CardContent>
               </Card>
             );
 
-            return p.comingSoon ? (
-              <div key={p.key} className="block cursor-default">
-                {card}
-              </div>
-            ) : (
+            return (
               <Link key={p.key} href={p.href} className="group block">
                 {card}
               </Link>
