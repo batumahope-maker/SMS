@@ -6,6 +6,7 @@ import { isDemoMode } from '@/lib/demo-mode';
 import { WriterError } from '@/lib/db-writer';
 import {
   deleteStudentDemo,
+  findDemoStudentById,
   updateStudentDemo,
   UpdateStudentParams,
 } from '@/lib/demo-management-writer';
@@ -25,7 +26,7 @@ function mapStudent(student: {
   enrollmentDate: Date | null;
   feePaid: Prisma.Decimal | null;
   feeBalance: Prisma.Decimal | null;
-  user: {
+  user?: {
     id: number;
     fullName: string | null;
     username: string;
@@ -80,10 +81,12 @@ export async function GET(
   }
 
   try {
-    const student = await db.student.findUnique({
-      where: { id: studentId },
-      include: { user: true },
-    });
+    const student = isDemoMode()
+      ? findDemoStudentById(studentId)
+      : await db.student.findUnique({
+          where: { id: studentId },
+          include: { user: true },
+        });
 
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
@@ -158,7 +161,9 @@ export async function PUT(
     return NextResponse.json({ error: 'Invalid student id' }, { status: 400 });
   }
 
-  const student = await db.student.findUnique({ where: { id: studentId } });
+  const student = isDemoMode()
+    ? findDemoStudentById(studentId)
+    : await db.student.findUnique({ where: { id: studentId } });
   if (!student) {
     return NextResponse.json({ error: 'Student not found' }, { status: 404 });
   }
@@ -177,21 +182,9 @@ export async function PUT(
     };
     await updateStudentDemo(Number(student.userId), params);
 
-    const updated = await db.student.findUnique({
-      where: { id: studentId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            username: true,
-            email: true,
-            phone: true,
-            status: true,
-          },
-        },
-      },
-    });
+    const updated = isDemoMode()
+      ? findDemoStudentById(studentId)
+      : await db.student.findUnique({ where: { id: studentId } });
     return NextResponse.json(mapStudent(updated!));
   } catch (error) {
     if (error instanceof WriterError) {
@@ -236,7 +229,9 @@ export async function DELETE(
   }
 
   try {
-    const student = await db.student.findUnique({ where: { id: studentId } });
+    const student = isDemoMode()
+      ? findDemoStudentById(studentId)
+      : await db.student.findUnique({ where: { id: studentId } });
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }

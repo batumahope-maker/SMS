@@ -4,7 +4,11 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { isDemoMode } from '@/lib/demo-mode';
 import { WriterError } from '@/lib/db-writer';
-import { createTeacherDemo, CreateTeacherParams } from '@/lib/demo-management-writer';
+import {
+  createTeacherDemo,
+  CreateTeacherParams,
+  findDemoTeacherWithUser,
+} from '@/lib/demo-management-writer';
 import type { Prisma } from '@prisma/client';
 
 /**
@@ -56,7 +60,7 @@ function mapTeacher(teacher: {
   subject: string | null;
   department: string | null;
   hireDate: Date | null;
-  user: {
+  user?: {
     id: number;
     fullName: string | null;
     username: string;
@@ -110,21 +114,23 @@ export async function POST(request: NextRequest) {
     };
 
     const created = await createTeacherDemo(params);
-    const teacher = await db.teacher.findFirst({
-      where: { userId: created.userId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            username: true,
-            email: true,
-            phone: true,
-            status: true,
+    const teacher = isDemoMode()
+      ? findDemoTeacherWithUser(created.userId)
+      : await db.teacher.findFirst({
+          where: { userId: created.userId },
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                username: true,
+                email: true,
+                phone: true,
+                status: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
     if (!teacher) {
       return NextResponse.json({ error: 'Failed to create teacher' }, { status: 500 });
     }

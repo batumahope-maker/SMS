@@ -4,7 +4,13 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { isDemoMode } from '@/lib/demo-mode';
 import { WriterError } from '@/lib/db-writer';
-import { createStudentDemo, CreateStudentParams } from '@/lib/demo-management-writer';
+import {
+  createStudentDemo,
+  demoStudentRows,
+  findDemoStudentWithUser,
+  demoUserByUserId,
+  CreateStudentParams,
+} from '@/lib/demo-management-writer';
 import type { Prisma } from '@prisma/client';
 
 /**
@@ -28,23 +34,33 @@ export async function GET() {
   }
 
   try {
-    const students = await db.student.findMany({
-      orderBy: { id: 'asc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            username: true,
-            email: true,
-            phone: true,
-            status: true,
+    const rows = isDemoMode()
+      ? demoStudentRows()
+      : await db.student.findMany({
+          orderBy: { id: 'asc' },
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                username: true,
+                email: true,
+                phone: true,
+                status: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
 
-    return NextResponse.json(students.map((student) => mapStudent(student)));
+    return NextResponse.json(
+      rows.map((student) =>
+        mapStudent(
+          isDemoMode()
+            ? { ...student, user: demoUserByUserId(student.userId ?? 0) }
+            : student
+        )
+      )
+    );
   } catch (error) {
     console.error('Error fetching students:', error);
     return NextResponse.json({ error: 'Failed to fetch students' }, { status: 500 });
@@ -65,7 +81,7 @@ function mapStudent(student: {
   enrollmentDate: Date | null;
   feePaid: Prisma.Decimal | null;
   feeBalance: Prisma.Decimal | null;
-  user: {
+  user?: {
     id: number;
     fullName: string | null;
     username: string;
@@ -137,21 +153,23 @@ export async function POST(request: NextRequest) {
     };
 
     const created = await createStudentDemo(params);
-    const student = await db.student.findFirst({
-      where: { userId: created.userId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            username: true,
-            email: true,
-            phone: true,
-            status: true,
+    const student = isDemoMode()
+      ? findDemoStudentWithUser(created.userId)
+      : await db.student.findFirst({
+          where: { userId: created.userId },
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                username: true,
+                email: true,
+                phone: true,
+                status: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
     if (!student) {
       return NextResponse.json({ error: 'Failed to create student' }, { status: 500 });
     }
@@ -166,6 +184,9 @@ export async function POST(request: NextRequest) {
       }
     }
     console.error('Error creating student:', error);
-    return NextResponse.json({ error: 'Failed to create student' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create student', message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }

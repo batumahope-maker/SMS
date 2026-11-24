@@ -488,7 +488,18 @@ const MODELS = [
   'lessonPlan',
 ] as const;
 
-const WRITABLE_MODELS = new Set(['mark', 'attendance', 'homework', 'homeworkSubmission', 'lessonPlan']);
+// Writes performed by demo-enabled API routes (marks, attendance, homework,
+// the admin management UIs and the demo writers).
+const WRITABLE_MODELS = new Set([
+  'mark',
+  'attendance',
+  'homework',
+  'homeworkSubmission',
+  'lessonPlan',
+  'announcement',
+  'payment',
+  'schoolEvent',
+]);
 
 function nextId(model: string): number {
   const ids = getRows(model).map((row) => Number(row.id ?? 0));

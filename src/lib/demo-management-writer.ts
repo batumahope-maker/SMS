@@ -281,3 +281,41 @@ export async function createTeacherDemo(
 
   return { userId, teacherId };
 }
+
+/* --------------------------------------------------------------------------
+ * Read helpers — routes use these in demo mode so they read through the same
+ * module instance as the writers (the dev server may instantiate the demo
+ * data more than once).
+ * ---------------------------------------------------------------------- */
+
+export function demoStudentRows(): typeof demoData.student {
+  return demoData.student;
+}
+
+export function findDemoStudentById(
+  id: number
+): (typeof demoData.student)[number] | null {
+  return demoData.student.find((row) => row.id === id) ?? null;
+}
+
+export function demoUserByUserId(
+  userId: number
+): (typeof demoData.user)[number] | undefined {
+  return demoData.user.find((row) => Number(row.id) === userId);
+}
+
+export function findDemoStudentWithUser(
+  userId: number
+): { user: (typeof demoData.user)[number] | undefined } & (typeof demoData.student)[number] | null {
+  const student = demoData.student.find((row) => Number(row.userId) === userId);
+  if (!student) return null;
+  return { ...student, user: demoUserByUserId(student.userId) };
+}
+
+export function findDemoTeacherWithUser(
+  userId: number
+): { user: (typeof demoData.user)[number] | undefined } & (typeof demoData.teacher)[number] | null {
+  const teacher = demoData.teacher.find((row) => Number(row.userId) === userId);
+  if (!teacher) return null;
+  return { ...teacher, user: demoData.user.find((row) => row.id === teacher.userId) };
+}

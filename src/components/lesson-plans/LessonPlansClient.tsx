@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, FileText, BookOpen, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface Plan { id: string; title: string; objectives: string | null; content: string; date: Date; duration: number | null; subject: { name: string } }
 interface LessonPlansClientProps { plans: Plan[]; subjects: { id: string; name: string }[]; teacherId: string }
@@ -25,14 +26,20 @@ export function LessonPlansClient({ plans, subjects, teacherId }: LessonPlansCli
     if (!form.title || !form.subjectId || !form.date) return;
     setSaving(true);
     try {
-      await fetch('/api/lesson-plans', {
+      const response = await fetch('/api/lesson-plans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, teacherId, duration: parseInt(form.duration) }),
       });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error?.error ?? 'Failed to save lesson plan');
+      }
       setOpen(false);
       setForm({ title: '', subjectId: '', objectives: '', content: '', resources: '', date: '', duration: '60' });
       window.location.reload();
+    } catch {
+      toast.error('Failed to save lesson plan');
     } finally { setSaving(false); }
   }
 

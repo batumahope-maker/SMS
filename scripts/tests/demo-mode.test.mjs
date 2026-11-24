@@ -76,6 +76,7 @@ transpile('src/lib/user-flags.ts');
 transpile('src/lib/auth.ts');
 transpile('src/lib/tl-reads.ts');
 transpile('src/lib/demo-registration-writer.ts');
+transpile('src/lib/demo-management-writer.ts');
 
 const resolveOriginal = Module._resolveFilename;
 Module._resolveFilename = function (request, ...args) {
@@ -109,6 +110,12 @@ const {
   rejectRegistrationDemo,
   setAccountPasswordDemo,
 } = require(path.join(outDir, 'demo-registration-writer.js'));
+const {
+  createStudentDemo,
+  updateStudentDemo,
+  deleteStudentDemo,
+  createTeacherDemo,
+} = require(path.join(outDir, 'demo-management-writer.js'));
 
 (async () => {
   try {
@@ -564,6 +571,113 @@ const {
       assert.equal(user.mustChangePassword, true);
       assert.equal(await verifyStoredPassword('NewDemoPass!', user.password), true);
       assert.equal(await verifyStoredPassword('Demo1234!', user.password), false);
+    });
+
+    await testAsync('demo data links the parent to its synthetic student (verified through the db)', async () => {
+      assert.equal(parentDemoChild.parentId, 4001);
+      assert.equal(parentDemoChild.studentUserId, 3001);
+      assert.equal(parentDemoChild.studentId, 'DEMO-S-1001');
+      const parentUser = await db.user.findUnique({ where: { id: 4001 } });
+      assert.equal(parentUser?.role, 'parent');
+      const linkedStudent = await db.student.findFirst({ where: { userId: 3001 } });
+      assert.equal(linkedStudent?.studentId, 'DEMO-S-1001');
+      const signedInParent = await authOptions.providers[0].options.authorize({
+        username: 'demo.parent',
+        password: 'Demo1234!',
+      });
+      assert.equal(signedInParent?.role, 'parent');
+    });
+
+    await testAsync('admin students demo create/update/delete works', async () => {
+      const created = await createStudentDemo({
+        studentId: 'DEMO-S-TEST-1',
+        fullName: 'Demo Created Student',
+        gender: 'Male',
+        trade: 'ICT',
+        level: 'Level 3',
+        section: 'B',
+      });
+      assert.ok(created.userId > 0);
+      assert.equal(created.studentId, 'DEMO-S-TEST-1');
+
+      const row = await db.student.findFirst({ where: { userId: created.userId } });
+      assert.ok(row);
+      assert.equal(row.studentId, 'DEMO-S-TEST-1');
+      assert.equal(row.trade, 'ICT');
+      const userRow = await db.user.findUnique({ where: { id: created.userId } });
+      assert.equal(userRow?.fullName, 'Demo Created Student');
+      assert.equal(userRow?.status, 'Active');
+
+      await assert.rejects(
+        () => createStudentDemo({ studentId: 'DEMO-S-TEST-1', fullName: 'Duplicate' }),
+        (error) => error instanceof WriterError && error.code === 'DUPLICATE_STUDENT_ID'
+      );
+
+      await updateStudentDemo(created.userId, { fullName: 'Demo Renamed Student', trade: 'ACG' });
+      const updatedUser = await db.user.findUnique({ where: { id: created.userId } });
+      assert.equal(updatedUser?.fullName, 'Demo Renamed Student');
+      const updatedRow = await db.student.findFirst({ where: { userId: created.userId } });
+      assert.equal(updatedRow.trade, 'ACG');
+
+      await deleteStudentDemo(created.userId);
+      assert.equal(await db.student.findFirst({ where: { userId: created.userId } }), null);
+      assert.equal(await db.user.findUnique({ where: { id: created.userId } }), null);
+    });
+
+    await testAsync('admin teachers demo create works', async () => {
+      const created = await createTeacherDemo({
+        teacherId: 'DEMO-T-TEST-1',
+        fullName: 'Demo Created Teacher',
+        subjects: 'ICT',
+        department: 'ICT',
+      });
+      assert.ok(created.userId > 0);
+      const row = await db.teacher.findFirst({ where: { userId: created.userId } });
+      assert.ok(row);
+      const userRow = await db.user.findUnique({ where: { id: created.userId } });
+      assert.equal(userRow?.role, 'teacher');
+      assert.equal(userRow?.status, 'Active');
+      assert.equal(row.subject, 'ICT');
+    });
+
+    await testAsync('admin management demo writes (announcements, events, payments, marks, attendance, lesson plans) work', async () => {
+      const announcement = await db.announcement.create({
+        data: {
+          title: 'Demo route test announcement',
+          content: 'Synthetic announcement for route tests.',
+          targetAudience: 'all',
+          priority: 'Normal',
+          createdBy: 1001,
+          createdAt: new Date(),
+        },
+      });
+      assert.ok(announcement.id);
+      const event = await db.schoolEvent.create({
+        data: {
+          title: 'Demo route test event',
+          eventType: 'Test',
+          eventDate: new Date(),
+          isActive: true,
+          createdAt: new Date(),
+        },
+      });
+      assert.ok(event.id);
+      const payment = await db.payment.create({
+        data: { studentId: 3001, amount: 100, paymentDate: new Date(), paymentMethod: 'Cash', createdAt: new Date() },
+      });
+      assert.ok(payment.id);
+      const mark = await db.mark.create({
+        data: { studentId: 3001, subject: 'Demo route test subject', term: 'Term 1', year: 2026, marks: 90, maxMarks: 100, createdAt: new Date() },
+      });
+      assert.ok(mark.id);
+      const attendanceRow = await db.attendance.create({
+        data: { studentId: 3001, status: 'Present', createdAt: new Date() },
+      });
+      assert.ok(attendanceRow.id);
+      const plan = await db.lessonPlan.create({
+        data: { teacherId: 2001, title: 'Demo route test plan', subject: 'ICT', content: 'Test content', date: new Date(), duration: 30 },
+      });
+      assert.ok(plan.id);
     });
   } finally {
     rmSync(outDir, { recursive: true, force: true });
