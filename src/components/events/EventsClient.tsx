@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface Event {
+export interface Event {
   id: string;
   title: string;
   description: string | null;
@@ -42,6 +42,37 @@ interface Event {
   location: string | null;
   eventType: string | null;
   status: string;
+}
+
+export interface ApiEventRow {
+  id: number;
+  title: string;
+  description: string | null;
+  eventDate: Date;
+  eventTime: Date | string | null;
+  location: string | null;
+  eventType: string | null;
+  isActive: boolean;
+}
+
+export function toEvent(row: ApiEventRow): Event {
+  return {
+    id: String(row.id),
+    title: row.title,
+    description: row.description ?? null,
+    date: row.eventDate,
+    endDate: null,
+    time: row.eventTime ? String(row.eventTime) : null,
+    location: row.location ?? null,
+    eventType: row.eventType ?? null,
+    status: row.isActive ? 'Active' : 'Inactive',
+  };
+}
+
+function computeCounts(events: Event[]): { upcomingCount: number; pastCount: number } {
+  const today = new Date();
+  const upcoming = events.filter((event) => new Date(event.date) >= today).length;
+  return { upcomingCount: upcoming, pastCount: events.length - upcoming };
 }
 
 interface EventsClientProps {
@@ -114,8 +145,9 @@ export function EventsClient({ events: initialEvents, upcomingCount, pastCount }
         throw new Error('Failed to create event');
       }
 
-      const newEvent = await response.json();
-      setEvents([newEvent, ...events]);
+      const refreshed = await fetch('/api/events', { cache: 'no-store' });
+      const rows = (await refreshed.json()) as ApiEventRow[];
+      setEvents(rows.map(toEvent));
       setIsCreateOpen(false);
       setFormData({
         title: '',

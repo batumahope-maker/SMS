@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface Announcement {
+export interface Announcement {
   id: string;
   title: string;
   content: string;
@@ -43,6 +43,31 @@ interface Announcement {
 
 interface AnnouncementsClientProps {
   announcements: Announcement[];
+}
+
+function announcementFromApi(row: {
+  id: number;
+  title: string;
+  content: string;
+  priority: string;
+  targetAudience: string;
+  createdAt: Date;
+}): Announcement {
+  return {
+    id: String(row.id),
+    title: row.title,
+    content: row.content,
+    audience: row.targetAudience,
+    priority: row.priority,
+    imageUrl: null,
+    createdAt: row.createdAt,
+  };
+}
+
+async function loadAnnouncements(): Promise<Announcement[]> {
+  const response = await fetch('/api/announcements', { cache: 'no-store' });
+  const rows = (await response.json()) as Parameters<typeof announcementFromApi>[0][];
+  return rows.map(announcementFromApi);
 }
 
 export function AnnouncementsClient({ announcements: initialAnnouncements }: AnnouncementsClientProps) {
@@ -97,8 +122,7 @@ export function AnnouncementsClient({ announcements: initialAnnouncements }: Ann
         throw new Error('Failed to create announcement');
       }
 
-      const newAnnouncement = await response.json();
-      setAnnouncements([newAnnouncement, ...announcements]);
+      setAnnouncements(await loadAnnouncements());
       setIsCreateOpen(false);
       setFormData({
         title: '',

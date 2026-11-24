@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { formatDate, formatMoney } from '@/lib/format';
+import { isDemoMode } from '@/lib/demo-mode';
+import { AdminPaymentsClient } from '@/components/payments/AdminPaymentsClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -18,6 +20,8 @@ export const dynamic = 'force-dynamic';
 export default async function PaymentsPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') redirect('/login');
+
+  if (isDemoMode()) return <AdminPaymentsClient />;
 
   const payments = await db.payment.findMany({
     orderBy: [{ paymentDate: 'desc' }, { id: 'desc' }],

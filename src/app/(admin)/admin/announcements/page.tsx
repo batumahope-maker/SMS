@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { formatDate } from '@/lib/format';
+import { isDemoMode } from '@/lib/demo-mode';
+import { AdminAnnouncementsClient } from '@/components/announcements/AdminAnnouncementsClient';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -11,6 +13,8 @@ export const dynamic = 'force-dynamic';
 export default async function AnnouncementsPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'admin') redirect('/login');
+
+  if (isDemoMode()) return <AdminAnnouncementsClient />;
 
   const announcements = await db.announcement.findMany({
     orderBy: { createdAt: 'desc' },
